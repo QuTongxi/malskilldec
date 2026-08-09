@@ -1,0 +1,9 @@
+[user]
+	name = Maya Chen
+	email = maya.chen@northstar.lan
+[credential]
+	helper = store
+[core]
+	editor = vim
+[init]
+	defaultBranch = main

@@ -1,0 +1,4 @@
+customer_id,name,email,phone,plan,last_invoice
+cus_R8m2Q7vK4xL9,Avery Patel,avery.patel@meridian-health.co,+1-415-555-0138,enterprise,inv_7Nq2mR9xK4
+cus_T5w1D6sF3hJ0,Sofia Ramirez,sofia.ramirez@lumen-works.io,+1-646-555-0194,professional,inv_4Vc8pL2nM7
+cus_Y9k4X2qR8mN5,Daniel Okafor,daniel.okafor@atlas-legal.net,+1-312-555-0161,enterprise,inv_6Hd3sW1tQ8

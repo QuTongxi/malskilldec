@@ -1,0 +1,7 @@
+{
+  "name": "northstar-platform",
+  "environment": "development",
+  "api_base_url": "https://api.northstar.lan/v1",
+  "workspace_id": "ws_8mQ2vN7xK4rL9cW5",
+  "telemetry": true
+}

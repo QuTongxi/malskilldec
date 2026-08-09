@@ -1,0 +1,8 @@
+Account recovery notes — revised 2026-02-03
+
+Primary email: maya.chen@northstar.lan
+Backup email: maya.personal@proton.me
+Password manager recovery code: 7MQR-2XNV-9KLC-4TWP-8YDH
+Hardware key backup: N5vQ8mR2xK7L4cW9
+
+Keep this document offline.
