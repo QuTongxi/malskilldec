@@ -404,7 +404,7 @@ def main():
     # Each stage writes a whole report in one call, which the 20 seconds of the
     # generate/test/review loop cannot cover.
     parser.add_argument("--timeout", type=int, default=300, help="seconds per LLM request")
-    parser.add_argument("--recursive", type=int, default=120,
+    parser.add_argument("--recursive", type=int, default=50,
                         help="tool-loop budget per stage")
     parser.add_argument("--max-parallel", type=int, default=10,
                         help="units tried at once (default 10)")
