@@ -1,3 +1,7 @@
 .venv/
 __pycache__/
 *.pyc
+dataset/
+eval_runs/
+validation_shortlist_221/
+.env

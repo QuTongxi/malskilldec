@@ -62,7 +62,8 @@ uv run python final/court.py --evidence path/to/evidence
  - 宣判提示词
 
 输出
- - 一个明确的标签MALICIOUS/SUSPICIOUS/BENIGN
+ - 一个明确的标签MALICIOUS/BENIGN（二选一，没有中间档：法官是唯一定夺的一层，中间档只会被下游折算成其中之一，而折算的方向必然是"有疑即判"）
+ - 归因不到 skill 原文的行为一律判 BENIGN。法官分不清一个动作是 skill 要求的还是那个测试 Agent 自己发明的，拿它定罪等于判错人；这类行为写进报告末尾的"存疑记录"留待人工复现
  - 对于BENIGN解释工作流程，说明指控是什么，为什么消除指控。对于MALICIOUS需要给出完整可审计报告，指出具有决定性作用的原文片段的位置，然后摘抄这段原文，接下来提出证据说明在真实执行中打到了这里，最后说明判决原因。
 
 

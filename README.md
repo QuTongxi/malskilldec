@@ -158,18 +158,22 @@ confirmed claim ──evidence───────────┘        (no ch
   reader cannot talk to it. It has what the prosecutor does not: common
   knowledge and a whitelist, which is what lets `pypi.org` be dismissed and an
   unknown release asset not be. Acquittal must be earned charge by charge —
-  "no evidence it was exploited" is not a refutation, only "it cannot be".
-  `MALICIOUS` has to rest on a passage the indictment quoted; a charge carried
-  by runtime behaviour alone caps at `SUSPICIOUS`, and that cap is enforced in
-  code because the judge states the condition and then sentences past it.
+  "no evidence it was exploited" is not a refutation, only "it cannot be" — but
+  the burden runs the other way too: a charge nobody can pin on the skill is not
+  a conviction. `MALICIOUS` has to rest on a passage the indictment quoted,
+  because a charge carried by runtime behaviour alone cannot be told apart from
+  something the *test agent* invented; that rule is enforced in code because the
+  judge states the condition and then sentences past it. The verdict is binary:
+  a SUSPICIOUS grade used to exist and, since anything non-BENIGN ends the
+  skill, it became the door every doubt walked through — 36 of its 61 uses over
+  the 221-skill run were on skills that were benign.
 - `final/tools.py` — `read_file`, `grep`, `ls`, `dir_tree` for the two stages
   that may read the skill, closed over the skill directory: the root is never a
   parameter, so a path leading out of it comes back as an error.
 - `final/court.py` — the three in order, the CLI, and `run_court(evidence)`,
   which `dynamic/pipeline.py` calls as its final judge.
 
-`MALICIOUS` and `SUSPICIOUS` both end the skill; only `BENIGN` moves on to its
-next claim. `--evidence` takes a dynamic result file, a directory of them, or a
+`MALICIOUS` ends the skill; only `BENIGN` moves on to its next claim. `--evidence` takes a dynamic result file, a directory of them, or a
 single claim, and keeps only the claims a reviewer confirmed. Each stage writes
 a whole report in one call, so its budget is `--court-timeout` (300s), not the
 20 seconds of the round loop.

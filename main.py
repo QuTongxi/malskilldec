@@ -50,10 +50,16 @@ def parse_args(argv=None):
     dynamic_group = parser.add_argument_group("dynamic")
     dynamic_group.add_argument("--round", type=int, default=3,
                                help="generate/test/review rounds per claim (default 3)")
-    dynamic_group.add_argument("--tester-timeout", type=int, default=20,
+    # `recursion_limit` counts graph super-steps, and one tool call costs two of
+    # them, so the old default of 20 gave the agent nine shell commands to
+    # install a product and then trigger the accused behaviour.  Over the 110x110
+    # run it never reached ten: 293 of 387 rounds died on GraphRecursionError,
+    # 71% of every not_trigger.  Another 32 died on the 20s model timeout.
+    dynamic_group.add_argument("--tester-timeout", type=int, default=45,
                                help="seconds per model call of the agent in the container")
-    dynamic_group.add_argument("--tester-recursive", type=int, default=20,
-                               help="tool-loop budget of the agent in the container")
+    dynamic_group.add_argument("--tester-recursive", type=int, default=60,
+                               help="tool-loop budget of the agent in the container "
+                                    "(graph steps; a tool call costs two)")
     dynamic_group.add_argument("--loop-timeout", type=int, default=20,
                                help="seconds per model call of generator and reviewer")
     dynamic_group.add_argument("--loop-recursive", type=int, default=50,
