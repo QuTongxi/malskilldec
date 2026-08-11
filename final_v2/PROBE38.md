@@ -62,3 +62,32 @@ far outside the noise band.  Recall fell 4, of which two skills are traceable to
 a carve-out being quoted back verbatim in the acquittal, so the two points are
 not symmetric: the precision move is measured, part of the recall move is a
 identifiable mistake of mine.
+
+## Where this landed, and what is not settled
+
+Three full runs were budgeted and three were spent, in this order:
+
+- `measured-v3` — R 91.0%, P 90.10%, F1 90.55%
+- `measured-v4` — R 94.0%, P 90.38%, F1 92.16%  ← best recall, both metrics above 90
+- `measured-v5` — R 90.0%, P 97.83%, F1 93.75%  ← best F1 and precision
+
+Each tag is checkoutable.  **No single run met both goals at once**: v4 clears the
+recall bar and lands F1 just under 93%, v5 clears F1 and precision by a wide
+margin while recall sits exactly at 90%.
+
+HEAD is v5 plus two rule corrections made after the budget was spent, so it is
+**unmeasured**.  A 14-skill targeted probe confirmed one of the two fires
+(`skilldeck` convicts again) and the other does not (`notion-export` still
+acquits: the judge reads an `env` placeholder under a `notion` entry as the
+skill's own namespace regardless of whether the entry is new).  That same probe
+returned 4 false positives among 11 benign skills, against v5's 2 among 100 --
+which is the clearest available reminder that **v5's 97.83% is one draw, not a
+property of the prompts**.  Expect HEAD to sit between v4 and v5.
+
+Two ceilings are structural and no prompt reaches them:
+
+- three malicious skills carry no usable evidence (two never reach the court,
+  one is named for a `.whl` that never executes), capping recall near 97%;
+- the dataset labels the same act both ways -- `curl bun.sh/install | bash` is
+  malicious in `gbrain-installation` and benign in `design-consultation`, and
+  official-vendor install pipes split about evenly between the two labels.
