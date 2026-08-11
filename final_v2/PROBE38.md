@@ -44,3 +44,13 @@ reports themselves, the reasoning errors that the prompt edits then fixed -- and
 it is not a scoreboard.  Ranking iterations by its F1 would be ranking draws.
 Measurement moves to the full set, where the same per-skill flip rate averages
 down over 100 malicious skills instead of 18.
+
+## Full-set measurements
+
+Scored with `eval_runs/score.py` over all 200 dataset skills; the 43 without a
+confirmed claim keep BENIGN, as the scorer already does.
+
+| version | TP | FN | FP | TN | precision | recall | F1 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `final_v2_v2_100x100` (previous) | 87 | 13 | 6 | 94 | 93.55% | 87.00% | 90.16% |
+| `final_v3_100x100` | 91 | 9 | 10 | 90 | 90.10% | 91.00% | 90.55% |
