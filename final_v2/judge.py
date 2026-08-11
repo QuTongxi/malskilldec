@@ -28,7 +28,7 @@ from llm import chat_model
 SYSTEM_PROMPT = prompts.load("judge")
 HUMAN_PROMPT = prompts.load("judge", "human")
 
-SEED = 42  # pinned with the other two stages, see forensics.py
+SEED, TOP_P = 42, 0.01  # pinned with the other two stages, see forensics.py
 
 UNREADABLE = ("\n\n---\n\n> 注意：本报告的 `verdict` 字段无法解析为 MALICIOUS 或 BENIGN，"
               "已按 MALICIOUS 记录以便人工复核。这是一次输出格式故障，不是对证据的判断。")
@@ -42,7 +42,7 @@ class Judgement(BaseModel):
 def adjudicate(indictment, timeout=300, recursive=50):
     """Return {verdict, report}: the sentence passed on the indictment."""
     agent = create_agent(
-        chat_model(temperature=0.0, timeout=timeout, seed=SEED),
+        chat_model(temperature=0.0, timeout=timeout, seed=SEED, top_p=TOP_P),
         tools=[],
         system_prompt=SYSTEM_PROMPT,
         response_format=ToolStrategy(Judgement),

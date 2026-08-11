@@ -28,7 +28,7 @@ from llm import chat_model
 SYSTEM_PROMPT = prompts.load("prosecutor")
 HUMAN_PROMPT = prompts.load("prosecutor", "human")
 
-SEED = 42  # pinned with the other two stages, see forensics.py
+SEED, TOP_P = 42, 0.01  # pinned with the other two stages, see forensics.py
 
 
 class Indictment(BaseModel):
@@ -39,7 +39,7 @@ class Indictment(BaseModel):
 def accuse(forensics, timeout=300, recursive=50):
     """Return {verdict, report}: the charges brought against the skill."""
     agent = create_agent(
-        chat_model(temperature=0.0, timeout=timeout, seed=SEED),
+        chat_model(temperature=0.0, timeout=timeout, seed=SEED, top_p=TOP_P),
         tools=tools.guide_tool(),
         system_prompt=SYSTEM_PROMPT,
         response_format=ToolStrategy(Indictment),

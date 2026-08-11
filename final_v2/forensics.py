@@ -27,13 +27,13 @@ from llm import chat_model
 SYSTEM_PROMPT = prompts.load("forensics")
 HUMAN_PROMPT = prompts.load("forensics", "human")
 
-# All three stages are pinned to one sample.  Temperature was already 0, and the
-# court was still changing its mind about 16 of 38 probe skills between runs of
-# the same prompts -- which made every measurement a measurement of the draw
-# rather than of the prompt.  Pinning does not make the court better; it makes a
-# five-point move mean something.  The two stages after this one read it from
-# here so they cannot drift apart from it.
-SEED = 42
+# Temperature was already 0, and the court still changed its mind about 16 of 38
+# probe skills between runs of the same prompts -- so every measurement was a
+# measurement of the draw rather than of the prompt.  `seed` alone did not fix it:
+# a back-to-back rerun at seed 42 flipped three skills of five, so this endpoint
+# does not honour it.  Narrowing top_p is the constraint that does apply.  The two
+# stages after this one read both values from here so they cannot drift apart.
+SEED, TOP_P = 42, 0.01
 
 # The court stops here when the report holds no chain: with nothing attributed
 # there is nothing to charge, and the two stages after this one would only be
@@ -48,7 +48,7 @@ def has_chain(report):
 def investigate(skill, evidence, skill_path, timeout=300, recursive=50):
     """Return the Markdown fact report for one skill."""
     agent = create_agent(
-        chat_model(temperature=0.0, timeout=timeout, seed=SEED),
+        chat_model(temperature=0.0, timeout=timeout, seed=SEED, top_p=TOP_P),
         tools=tools.read_tools(skill_path),
         system_prompt=SYSTEM_PROMPT,
     )
