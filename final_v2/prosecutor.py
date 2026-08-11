@@ -28,6 +28,8 @@ from llm import chat_model
 SYSTEM_PROMPT = prompts.load("prosecutor")
 HUMAN_PROMPT = prompts.load("prosecutor", "human")
 
+SEED = 42  # pinned with the other two stages, see forensics.py
+
 
 class Indictment(BaseModel):
     verdict: str = Field(description="MALICIOUS when at least one charge is filed, otherwise BENIGN")
@@ -37,7 +39,7 @@ class Indictment(BaseModel):
 def accuse(forensics, timeout=300, recursive=50):
     """Return {verdict, report}: the charges brought against the skill."""
     agent = create_agent(
-        chat_model(temperature=0.0, timeout=timeout),
+        chat_model(temperature=0.0, timeout=timeout, seed=SEED),
         tools=tools.guide_tool(),
         system_prompt=SYSTEM_PROMPT,
         response_format=ToolStrategy(Indictment),

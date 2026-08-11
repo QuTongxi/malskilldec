@@ -27,11 +27,12 @@ from llm import chat_model
 SYSTEM_PROMPT = prompts.load("forensics")
 HUMAN_PROMPT = prompts.load("forensics", "human")
 
-# Everything downstream is a function of this report, so a report that comes out
-# different on a rerun moves the whole verdict.  The two stages after this one
-# reason over prose and gain nothing from a pinned sample; this one enumerates
-# records, where a dropped line is a lost conviction, so it is the one stage that
-# is pinned.
+# All three stages are pinned to one sample.  Temperature was already 0, and the
+# court was still changing its mind about 16 of 38 probe skills between runs of
+# the same prompts -- which made every measurement a measurement of the draw
+# rather than of the prompt.  Pinning does not make the court better; it makes a
+# five-point move mean something.  The two stages after this one read it from
+# here so they cannot drift apart from it.
 SEED = 42
 
 # The court stops here when the report holds no chain: with nothing attributed
