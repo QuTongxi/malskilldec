@@ -160,6 +160,86 @@ def order_skills(skills):
     return sorted(skills, key=lambda s: -max([c["score"] for c in s["claims"]] or [0]))
 
 
+def prune_findings(findings, max_findings_per_group=None, min_finding_level=None,
+                   max_findings_per_claim=None, finding_context_chars=None):
+    """Trim findings inside one claim.  None for every knob means no change."""
+    kept = list(findings)
+    if min_finding_level is not None:
+        floor = LEVEL_RANK[min_finding_level]
+        kept = [f for f in kept if LEVEL_RANK[f["level"]] >= floor]
+
+    if max_findings_per_group is not None:
+        # findings are already severity-sorted by rebuild/aggregate
+        by_group, capped = {}, []
+        for finding in kept:
+            group = finding["group"]
+            n = by_group.get(group, 0)
+            if n < max_findings_per_group:
+                capped.append(finding)
+                by_group[group] = n + 1
+        kept = capped
+
+    if max_findings_per_claim is not None:
+        kept = kept[:max_findings_per_claim]
+
+    if finding_context_chars is not None:
+        trimmed = []
+        for finding in kept:
+            finding = dict(finding)
+            context = finding.get("context") or ""
+            if len(context) > finding_context_chars:
+                finding["context"] = context[:finding_context_chars]
+            trimmed.append(finding)
+        kept = trimmed
+    return kept
+
+
+def prune_skill(skill, max_claims=None, min_claim_score=None,
+                max_findings_per_group=None, min_finding_level=None,
+                max_findings_per_claim=None, finding_context_chars=None):
+    """Optionally shrink claims/findings before denoise.  Unset knobs are no-ops."""
+    finding_knobs = any(v is not None for v in (
+        max_findings_per_group, min_finding_level, max_findings_per_claim,
+        finding_context_chars))
+    claim_knobs = max_claims is not None or min_claim_score is not None
+    if not finding_knobs and not claim_knobs:
+        return skill
+
+    claims = []
+    for claim in skill["claims"]:
+        findings = (prune_findings(claim["findings"], max_findings_per_group,
+                                   min_finding_level, max_findings_per_claim,
+                                   finding_context_chars)
+                    if finding_knobs else claim["findings"])
+        if not findings:
+            continue
+        claim = dict(claim)
+        claim["findings"] = findings
+        claims.append(claim)
+
+    if finding_knobs:
+        # Re-score from the surviving findings so top-k still follows the model.
+        flat, seen = [], set()
+        for claim in claims:
+            for finding in claim["findings"]:
+                fid = finding["metadata"]["id"]
+                if fid not in seen:
+                    seen.add(fid)
+                    flat.append(finding)
+        claims = rebuild_claims(skill, flat)
+
+    if min_claim_score is not None:
+        claims = [c for c in claims if c["score"] >= min_claim_score]
+    claims = sorted(claims, key=lambda c: -c["score"])
+    if max_claims is not None:
+        claims = claims[:max_claims]
+
+    out = dict(skill)
+    out["claims"] = claims
+    out["n_findings"] = sum(len(c["findings"]) for c in claims)
+    return out
+
+
 # --------------------------------------------------------------------------
 # Regex gate
 #

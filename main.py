@@ -68,6 +68,9 @@ def parse_args(argv=None):
                                help="skills tested at once (default 8)")
     dynamic_group.add_argument("--skills", nargs="*",
                                help="only these skills, by name; default is all accused")
+    dynamic_group.add_argument("--skip-court", action="store_true",
+                               help="dynamic only; run final/court.py afterwards yourself")
+    dynamic_pipeline.add_prune_args(parser)
 
     final_group = parser.add_argument_group("final")
     # A court stage writes a whole report in one call, which the 20 seconds of
@@ -83,7 +86,7 @@ def court_reports(results, directory):
     written = 0
     for result in results:
         for claim in result.get("claims", []):
-            judgement = claim["judgement"]
+            judgement = claim.get("judgement") or {}
             if judgement.get("indictment"):
                 court.write_report(directory, result["skill"], claim["type"],
                                    judgement, testimony=result.get("testimony"))
@@ -115,19 +118,28 @@ def collect_verdicts(report, results):
 
         claims, decided = [], None
         for claim in result["claims"]:
-            judgement = claim["judgement"]
+            judgement = claim.get("judgement") or {}
             confirmed = claim["rounds"][-1]["reviewer"]["verdict"] == "confirmed"
             claims.append({"type": claim["type"], "score": claim["score"],
-                           "confirmed": confirmed, "court": judgement["verdict"],
-                           "judge": judgement["judge_verdict"], "reason": judgement["reason"]})
-            if judgement["verdict"] == "MALICIOUS" and decided is None:
+                           "confirmed": confirmed,
+                           "court": judgement.get("verdict"),
+                           "judge": judgement.get("judge_verdict"),
+                           "reason": judgement.get("reason")})
+            if judgement.get("verdict") == "MALICIOUS" and decided is None:
                 decided = claims[-1]
+
+        if result["verdict"] == "PENDING_COURT":
+            reason = "%d claim(s) confirmed; court not run" % sum(
+                1 for c in claims if c["confirmed"])
+        elif decided:
+            reason = "%s: %s" % (decided["type"], decided["reason"])
+        else:
+            reason = "no claim survived the court"
 
         verdicts.append({
             "skill": skill["skill"], "path": skill["path"],
             "verdict": result["verdict"],
-            "reason": ("%s: %s" % (decided["type"], decided["reason"])) if decided
-                      else "no claim survived the court",
+            "reason": reason,
             "claims": claims,
         })
     return verdicts
@@ -153,6 +165,12 @@ def main():
     results = []
     if not accused:
         print("\nno skill was accused; nothing to validate")
+    elif args.skip_court:
+        print("\n" + "=" * 70, "\ndynamic (court skipped)\n", sep="")
+        results = dynamic_pipeline.run_all(accused, args, out / "dynamic")
+        print("\ncourt skipped; judge later with:\n"
+              "  uv run python final/court.py --evidence %s --out %s"
+              % (out / "dynamic", out / "court"))
     else:
         print("\n" + "=" * 70, "\ndynamic + final\n", sep="")
         results = dynamic_pipeline.run_all(accused, args, out / "dynamic")

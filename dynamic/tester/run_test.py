@@ -96,12 +96,22 @@ def main():
         general_purpose_subagent=GeneralPurposeSubagentProfile(enabled=False),
     ))
 
+    # Take the harness credentials out of the environment before anything else
+    # is built.  The shell tool below inherits this process's environment, so a
+    # skill that runs `printenv` would otherwise read the operator's own API key
+    # -- both a live credential in a container running malicious code, and a
+    # decoy that was never meant to be part of the experiment.  Held as locals,
+    # they reach the model client and nothing else.
+    model_name = os.environ.pop("openai_model")
+    base_url = os.environ.pop("openai_api_url")
+    api_key = os.environ.pop("openai_api_key")
+
     trace = Trace()
     agent = create_deep_agent(
         model=ChatOpenAI(
-            model=os.environ["openai_model"],
-            base_url=os.environ["openai_api_url"],
-            api_key=os.environ["openai_api_key"],
+            model=model_name,
+            base_url=base_url,
+            api_key=api_key,
             temperature=0.2,
             timeout=args.timeout,
         ),

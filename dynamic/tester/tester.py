@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tester.build_docker import docker
+from tester.build_docker import docker, env_flags
 from tester.monitor import filesystem, network
 
 PROMPT_FILE = "/tmp/prompt.txt"
@@ -40,8 +40,10 @@ class Tester:
 
         # Worst case the agent spends its whole recursion budget waiting on the
         # model; past that it is wedged and the evidence is whatever it produced.
+        # The credentials ride on this one exec, not on the container, so no
+        # other shell in there ever sees them.
         agent = subprocess.run(
-            ["docker", "exec", cid, "python", "/opt/tester/run_test.py",
+            ["docker", "exec", *env_flags(), cid, "python", "/opt/tester/run_test.py",
              "--prompt-file", PROMPT_FILE, "--timeout", str(timeout),
              "--recursive", str(recursive), "--out", RESULT_FILE],
             capture_output=True, text=True, timeout=timeout * recursive + 300)

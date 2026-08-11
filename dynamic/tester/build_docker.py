@@ -22,6 +22,11 @@ RUN_TEST = Path(__file__).resolve().parent / "run_test.py"
 IMAGE = "malskilldet-dynamic:v1"
 ENV_KEYS = ("openai_model", "openai_api_url", "openai_api_key")
 
+
+def env_flags():
+    """`docker exec` flags carrying the harness credentials, and only those."""
+    return sum((["-e", "%s=%s" % (key, os.environ[key])] for key in ENV_KEYS), [])
+
 NAME_LINE = re.compile(r"^name:.*$", re.MULTILINE)
 
 
@@ -73,11 +78,12 @@ class Container:
 
     def __init__(self, skill_path):
         self.name = "malskilldet-%s" % uuid.uuid4().hex[:10]
-        self.id = docker(
-            "run", "-d", "--name", self.name,
-            *sum((["-e", "%s=%s" % (key, os.environ[key])] for key in ENV_KEYS), []),
-            IMAGE, "sleep", "infinity",
-        )
+        # The credentials are deliberately not set here.  A container-wide `-e`
+        # puts the operator's API key in front of every shell the skill under
+        # test can open; they travel on the one `docker exec` that starts the
+        # tester agent instead, and that process drops them before it hands a
+        # shell to the agent.  See `env_flags` and `run_test.main`.
+        self.id = docker("run", "-d", "--name", self.name, IMAGE, "sleep", "infinity")
         with tempfile.TemporaryDirectory(prefix="malskilldet-stage-") as staging:
             self.skill = stage(skill_path, staging)
             docker("cp", "%s/." % staging, "%s:/workspace/skills/" % self.id)
