@@ -9,11 +9,13 @@ from langchain_openai import ChatOpenAI
 dotenv.load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 
-def chat_model(temperature, timeout):
+def chat_model(temperature, timeout, seed=None):
+    """A chat model.  `seed` pins sampling for the stages that must not drift."""
     return ChatOpenAI(
         model=os.environ["openai_model"],
         base_url=os.environ["openai_api_url"],
         api_key=os.environ["openai_api_key"],
         temperature=temperature,
         timeout=timeout,
+        seed=seed,
     )

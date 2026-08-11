@@ -9,14 +9,22 @@ system prompt, then a `<!-- HUMAN -->` line, then the human template -- the
 marker is an HTML comment so the file still reads as one document.
 
 `text()` returns a whole file instead, for the ones that are not a stage:
-`precedents.md` and the eight `charges/*.md`.
+`precedents.md`, `payload.md` and the eight `charges/*.md`.
+
+Two of those files are shared rules rather than prompts of their own, and every
+place that needs them pulls them in by marker instead of keeping a copy: three
+near-identical paraphrases of one rubric is how the three stages came to grade
+the same payload differently.
 """
 
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 MARKER = "<!-- HUMAN -->"
-PRECEDENTS = "<!-- PRECEDENTS -->"
+
+# Marker -> the file that replaces it, resolved in `text()` so charge guides read
+# through `read_guide` get the same rubric the prompts do.
+INCLUDES = {"<!-- PRECEDENTS -->": "precedents", "<!-- PAYLOAD -->": "payload"}
 
 CHARGES = ("improper_credential_handling", "malicious_code",
            "modifying_system_services", "prompt_injection", "secret_detection",
@@ -25,11 +33,15 @@ CHARGES = ("improper_credential_handling", "malicious_code",
 
 
 def text(name):
-    """Return a whole prompt file, e.g. `precedents` or `charges/malicious_code`."""
+    """Return a whole prompt file with its includes resolved."""
     path = HERE / ("%s.md" % name)
     if not path.is_file():
         raise FileNotFoundError("no prompt at %s" % path)
-    return path.read_text(encoding="utf-8").strip()
+    body = path.read_text(encoding="utf-8").strip()
+    for marker, include in INCLUDES.items():
+        if marker in body:
+            body = body.replace(marker, text(include))
+    return body
 
 
 def load(name, part="system"):
@@ -43,11 +55,4 @@ def load(name, part="system"):
         if not found:
             raise ValueError("%s.md has no %s section" % (name, MARKER))
         return human.strip()
-
-    system = system.strip()
-    # The judge carries the precedent list inside its system prompt: it is the
-    # one place empirical patches are allowed to live, so it is a file of its
-    # own rather than another paragraph in the prompt.
-    if PRECEDENTS in system:
-        system = system.replace(PRECEDENTS, text("precedents"))
-    return system
+    return system.strip()

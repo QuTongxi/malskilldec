@@ -27,6 +27,13 @@ from llm import chat_model
 SYSTEM_PROMPT = prompts.load("forensics")
 HUMAN_PROMPT = prompts.load("forensics", "human")
 
+# Everything downstream is a function of this report, so a report that comes out
+# different on a rerun moves the whole verdict.  The two stages after this one
+# reason over prose and gain nothing from a pinned sample; this one enumerates
+# records, where a dropped line is a lost conviction, so it is the one stage that
+# is pinned.
+SEED = 42
+
 # The court stops here when the report holds no chain: with nothing attributed
 # there is nothing to charge, and the two stages after this one would only be
 # reading an empty page.
@@ -40,7 +47,7 @@ def has_chain(report):
 def investigate(skill, evidence, skill_path, timeout=300, recursive=50):
     """Return the Markdown fact report for one skill."""
     agent = create_agent(
-        chat_model(temperature=0.0, timeout=timeout),
+        chat_model(temperature=0.0, timeout=timeout, seed=SEED),
         tools=tools.read_tools(skill_path),
         system_prompt=SYSTEM_PROMPT,
     )
