@@ -55,3 +55,10 @@ confirmed claim keep BENIGN, as the scorer already does.
 | `final_v2_v2_100x100` (previous) | 87 | 13 | 6 | 94 | 93.55% | 87.00% | 90.16% |
 | `final_v3_100x100` | 91 | 9 | 10 | 90 | 90.10% | 91.00% | 90.55% |
 | `final_v4_100x100` | 94 | 6 | 10 | 90 | 90.38% | 94.00% | 92.16% |
+| `final_v5_100x100` | 90 | 10 | 2 | 98 | 97.83% | 90.00% | 93.75% |
+
+v5's six precision fixes worked and then some -- false positives fell 10 -> 2,
+far outside the noise band.  Recall fell 4, of which two skills are traceable to
+a carve-out being quoted back verbatim in the acquittal, so the two points are
+not symmetric: the precision move is measured, part of the recall move is a
+identifiable mistake of mine.
