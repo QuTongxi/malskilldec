@@ -94,18 +94,29 @@ Two ceilings are structural and no prompt reaches them:
 
 ## Other backbones
 
-Same prompts, `--evidence eval_runs/run_malicious100/` (100 malicious skills only,
-so precision is not measurable there).
+All three scored the same way: 100 malicious + 100 benign, skills the court never
+reached counted BENIGN.  Same prompts and same code throughout; only the backbone
+differs.  Every figure is a single run, and single runs on these endpoints move --
+two replays of one unmodified judge prompt over the same 124 indictments differed
+by six benign verdicts.  Read the columns with that in mind.
 
-| backbone | TP | FN | recall | note |
-| --- | --- | --- | --- | --- |
-| deepseek (baseline, model unrecorded) | 73 | 27 | 73.0% | 25 acquitted, 20 of them by the judge |
-| deepseek-v3.2 + revised judge | 90 | 10 | 90.0% | 8 acquitted: 5 judge, 3 prosecutor |
+| backbone | TP | TN | FP | FN | precision | recall | F1 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| qwen3-max (`measured-v4`) | 94 | 90 | 10 | 6 | 90.38% | 94.00% | 92.16% |
+| deepseek-v3.2 + revised judge | 90 | 91 | 9 | 10 | 90.91% | 90.00% | 90.45% |
+| openai/gpt-4o-mini (openrouter) | 79 | 59 | 41 | 21 | 65.83% | 79.00% | 71.82% |
 
-`openai/gpt-4o-mini` via openrouter, on the 100+100 evidence, does not work:
-120 MALICIOUS / 1 BENIGN / 36 error.  It convicts 99% of what it manages to
-judge, and 30 of the 36 errors are the forensics tool loop hitting the recursion
-limit.  Its 65.83% precision / 79.00% recall is an artefact of convicting
-everything, not a measurement of the prompts.  Note the openrouter base URL must
-be `https://openrouter.ai/api/v1`; the `/api/v1/responses` path in `.env` returns
-404 for this client.
+The deepseek row is the malicious half (`judge_deepseek_v2_full`) merged with the
+benign half (`judge_deepseek_v2_benign`); the malicious evidence files in
+`run_malicious100/` are byte-identical to their counterparts under
+`run_100x100/dynamic/`, so the two halves are the same experiment.  Against the
+earlier deepseek baseline of 73/100 recall the revised judge is worth a lot, but
+that baseline's model is unrecorded and `.env` changed mid-session, so the pair is
+not a clean single-variable comparison.
+
+gpt-4o-mini's row describes a failure mode rather than a measurement: it returned
+120 MALICIOUS, 1 BENIGN and 36 error over the 157 skills that reached the court,
+convicting 99% of what it managed to judge.  Thirty of the 36 errors are the
+forensics tool loop hitting the recursion limit.  Note the openrouter base URL
+must be `https://openrouter.ai/api/v1`; the `/api/v1/responses` path recorded in
+`.env` returns 404 for this client.
