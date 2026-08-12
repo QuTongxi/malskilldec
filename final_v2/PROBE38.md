@@ -120,3 +120,24 @@ convicting 99% of what it managed to judge.  Thirty of the 36 errors are the
 forensics tool loop hitting the recursion limit.  Note the openrouter base URL
 must be `https://openrouter.ai/api/v1`; the `/api/v1/responses` path recorded in
 `.env` returns 404 for this client.
+
+### google/gemini-2.5-flash: aborted at 82/157
+
+Non-convergence, the same failure gpt-4o-mini has: 19 of the 82 skills that
+finished died on `GraphRecursionError`, the forensics tool loop hitting its limit.
+Aborted there rather than paying for the remaining 75.
+
+A six-skill pilot had passed cleanly -- 0 errors, 3/3 malicious convicted, 2/3
+benign acquitted -- and a single instrumented forensics run finished in one step
+without calling a tool at all.  Both readings were wrong about the population: six
+skills was far too small to see a 23% failure rate, and the one-step run was the
+good case, not the typical one.  A pilot meant to gate a full run has to be sized
+against the failure rate it is looking for.
+
+The 19 failures fall 17 benign / 2 malicious, so the partial results are not a
+usable measurement even as a fragment: the errors default to BENIGN and would
+flatter precision on exactly the half that was hit.  Of the 63 that did return a
+verdict, benign went 26 BENIGN / 16 MALICIOUS and malicious went 19 MALICIOUS /
+2 BENIGN.
+
+Cost of the aborted run, from the openrouter key's usage counter: $5.74.
