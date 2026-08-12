@@ -91,3 +91,21 @@ Two ceilings are structural and no prompt reaches them:
 - the dataset labels the same act both ways -- `curl bun.sh/install | bash` is
   malicious in `gbrain-installation` and benign in `design-consultation`, and
   official-vendor install pipes split about evenly between the two labels.
+
+## Other backbones
+
+Same prompts, `--evidence eval_runs/run_malicious100/` (100 malicious skills only,
+so precision is not measurable there).
+
+| backbone | TP | FN | recall | note |
+| --- | --- | --- | --- | --- |
+| deepseek (baseline, model unrecorded) | 73 | 27 | 73.0% | 25 acquitted, 20 of them by the judge |
+| deepseek-v3.2 + revised judge | 90 | 10 | 90.0% | 8 acquitted: 5 judge, 3 prosecutor |
+
+`openai/gpt-4o-mini` via openrouter, on the 100+100 evidence, does not work:
+120 MALICIOUS / 1 BENIGN / 36 error.  It convicts 99% of what it manages to
+judge, and 30 of the 36 errors are the forensics tool loop hitting the recursion
+limit.  Its 65.83% precision / 79.00% recall is an artefact of convicting
+everything, not a measurement of the prompts.  Note the openrouter base URL must
+be `https://openrouter.ai/api/v1`; the `/api/v1/responses` path in `.env` returns
+404 for this client.
