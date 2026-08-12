@@ -3,22 +3,32 @@
 
     uv run python main.py <folder> [-o run/] [--disable-codeql] [--round 3] ...
 
-    static   every skill is accused of the malicious types its patterns match
-    dynamic  one container per skill; each claim is generated, run and reviewed
-             until the machine records confirm it or the rounds run out
-    final    the court tries every confirmed claim: testimony, indictment,
-             judgement -- and a skill ends the moment one claim is malicious
+Three steps, in order, each finished before the next one starts:
 
-The three stages also have their own entry points (`static/pipeline.py`,
-`dynamic/pipeline.py`, `final/court.py`); this one runs them in order and keeps
-their flags, so a full run needs nothing but the folder.
+    1 static   every skill is accused of the malicious types its patterns match
+    2 dynamic  one container per skill; every claim is generated, run and
+               reviewed until the machine records confirm it or the rounds run
+               out.  Nothing is judged here.
+    3 final    the court reads the evidence of the whole run and tries each
+               skill on all of its confirmed claims at once: forensics,
+               indictment, judgement
+
+The steps are separate because the court's unit of judgement is a *skill*, not a
+claim: one chain routinely spans several claims, so it can only be tried once the
+dynamic step has finished all of them.
+
+Each step also has its own entry point (`static/pipeline.py`,
+`dynamic/pipeline.py`, `final_v2/court.py`), which is how a single step is
+re-run without paying for the others again; this file runs the three in order and
+keeps their flags, so a full run needs nothing but the folder.
 
 Everything lands under `--out`:
 
-    static.json          the static report, claims and findings per skill
-    dynamic/<skill>.json every round of every claim, with the court's judgement
-    dynamic/summary.json one line per skill
-    court/<skill>-<claim>.md   testimony, indictment and judgement to read
+    static.json          step 1: the static report, claims and findings per skill
+    dynamic/<skill>.json step 2: every round of every claim, with the review
+    dynamic/summary.json step 2: one line per skill
+    court/<skill>.md     step 3: forensics, indictment and judgement, to read
+    court/court.json     step 3: one court result per skill tried
     verdicts.json        the answer: one verdict per skill in the folder
 """
 
@@ -29,7 +39,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "final"))
+sys.path.insert(0, str(ROOT / "final_v2"))
 
 import court
 from dynamic import pipeline as dynamic_pipeline
@@ -68,8 +78,6 @@ def parse_args(argv=None):
                                help="skills tested at once (default 8)")
     dynamic_group.add_argument("--skills", nargs="*",
                                help="only these skills, by name; default is all accused")
-    dynamic_group.add_argument("--skip-court", action="store_true",
-                               help="dynamic only; run final/court.py afterwards yourself")
     dynamic_pipeline.add_prune_args(parser)
 
     final_group = parser.add_argument_group("final")
@@ -77,26 +85,21 @@ def parse_args(argv=None):
     # the round loop cannot cover.
     final_group.add_argument("--court-timeout", type=int, default=300,
                              help="seconds per model call of the court (default 300)")
+    final_group.add_argument("--court-recursive", type=int, default=50,
+                             help="tool-loop budget per court stage")
 
     return parser.parse_args(argv)
 
 
-def court_reports(results, directory):
-    """Write the Markdown of every claim that reached the court."""
-    written = 0
-    for result in results:
-        for claim in result.get("claims", []):
-            judgement = claim.get("judgement") or {}
-            if judgement.get("indictment"):
-                court.write_report(directory, result["skill"], claim["type"],
-                                   judgement, testimony=result.get("testimony"))
-                written += 1
-    return written
+def collect_verdicts(report, results, judged):
+    """One verdict per skill in the folder, accused or not.
 
-
-def collect_verdicts(report, results):
-    """One verdict per skill in the folder, accused or not."""
+    `results` is what step 2 produced, `judged` what step 3 did.  A skill only
+    reaches step 3 if a reviewer confirmed at least one of its claims, so the
+    skills missing from `judged` are the ones nothing was confirmed against.
+    """
     tested = {r["skill"]: r for r in results}
+    tried = {r["path"]: r for r in judged}
 
     verdicts = []
     for skill in report["skills"]:
@@ -116,31 +119,26 @@ def collect_verdicts(report, results):
                              "claims": []})
             continue
 
-        claims, decided = [], None
-        for claim in result["claims"]:
-            judgement = claim.get("judgement") or {}
-            confirmed = claim["rounds"][-1]["reviewer"]["verdict"] == "confirmed"
-            claims.append({"type": claim["type"], "score": claim["score"],
-                           "confirmed": confirmed,
-                           "court": judgement.get("verdict"),
-                           "judge": judgement.get("judge_verdict"),
-                           "reason": judgement.get("reason")})
-            if judgement.get("verdict") == "MALICIOUS" and decided is None:
-                decided = claims[-1]
+        claims = [{"type": claim["type"], "score": claim["score"],
+                   "confirmed": claim["rounds"][-1]["reviewer"]["verdict"] == "confirmed"}
+                  for claim in result["claims"]]
 
-        if result["verdict"] == "PENDING_COURT":
-            reason = "%d claim(s) confirmed; court not run" % sum(
-                1 for c in claims if c["confirmed"])
-        elif decided:
-            reason = "%s: %s" % (decided["type"], decided["reason"])
+        court_result = tried.get(skill["path"])
+        if court_result is None:
+            verdict = "BENIGN"
+            reason = ("no claim was confirmed by the dynamic step"
+                      if not any(c["confirmed"] for c in claims)
+                      else "confirmed claims, but the court did not try the skill")
         else:
-            reason = "no claim survived the court"
+            verdict = court_result["verdict"]
+            reason = "%s: %s" % (court_result["claim"] or "<none>", court_result["reason"])
 
         verdicts.append({
             "skill": skill["skill"], "path": skill["path"],
-            "verdict": result["verdict"],
+            "verdict": verdict,
             "reason": reason,
             "claims": claims,
+            "judge": (court_result or {}).get("judge_verdict"),
         })
     return verdicts
 
@@ -150,7 +148,7 @@ def main():
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
-    print("=" * 70, "\nstatic\n", sep="")
+    print("=" * 70, "\nstep 1/3  static\n", sep="")
     try:
         report = static_pipeline.scan(args.folder, not args.disable_codeql)
     except RuntimeError as error:
@@ -162,22 +160,24 @@ def main():
     if args.skills:
         accused = [s for s in accused if s["skill"] in args.skills]
 
-    results = []
+    results, judged = [], []
     if not accused:
         print("\nno skill was accused; nothing to validate")
-    elif args.skip_court:
-        print("\n" + "=" * 70, "\ndynamic (court skipped)\n", sep="")
-        results = dynamic_pipeline.run_all(accused, args, out / "dynamic")
-        print("\ncourt skipped; judge later with:\n"
-              "  uv run python final/court.py --evidence %s --out %s"
-              % (out / "dynamic", out / "court"))
     else:
-        print("\n" + "=" * 70, "\ndynamic + final\n", sep="")
+        print("\n" + "=" * 70, "\nstep 2/3  dynamic\n", sep="")
         results = dynamic_pipeline.run_all(accused, args, out / "dynamic")
-        written = court_reports(results, out / "court")
-        print("\n%d court report(s) under %s" % (written, out / "court"))
 
-    verdicts = collect_verdicts(report, results)
+        print("\n" + "=" * 70, "\nstep 3/3  final\n", sep="")
+        groups = court.load_evidence(out / "dynamic")
+        if not groups:
+            print("no claim was confirmed; the court has nothing to try")
+        else:
+            print("%d skill(s) to try, %d confirmed claim(s) between them\n"
+                  % (len(groups), sum(len(g) for g in groups)))
+            judged = court.try_skills(groups, out / "court", args.court_timeout,
+                                      args.court_recursive, args.max_parallel)
+
+    verdicts = collect_verdicts(report, results, judged)
     (out / "verdicts.json").write_text(
         json.dumps(verdicts, ensure_ascii=False, indent=2), encoding="utf-8")
 

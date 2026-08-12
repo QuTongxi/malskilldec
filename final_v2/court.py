@@ -311,6 +311,42 @@ def load_evidence(path):
     return list(grouped.values())
 
 
+def try_skills(groups, out, timeout=300, recursive=50, max_parallel=10):
+    """Try every group of confirmed claims, write the reports, return the results.
+
+    `main.py` runs this as its third step, so the one-command path and
+    `court.py --evidence` reach a verdict through the same code.
+    """
+    out = Path(out)
+    out.mkdir(parents=True, exist_ok=True)
+
+    def try_one(units):
+        head = units[0]
+        try:
+            result = run_court(units, timeout, recursive)
+        except Exception as error:                       # one skill, not the run
+            result = {"skill": head.get("skill"), "path": head.get("path"),
+                      "claim": None, "verdict": "error", "judge_verdict": None,
+                      "reason": "%s: %s" % (type(error).__name__, error),
+                      "forensics": None, "indictment": None, "judgement": None}
+        write_report(out, result)
+        print("%-55s %-10s %s" % (result["skill"], result["verdict"],
+                                  result["reason"][:60]), flush=True)
+        return result
+
+    with ThreadPoolExecutor(max_workers=max_parallel) as pool:
+        results = list(pool.map(try_one, groups))
+
+    (out / "court.json").write_text(
+        json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    print("\n%d MALICIOUS, %d BENIGN, %d error, written to %s"
+          % (sum(r["verdict"] == "MALICIOUS" for r in results),
+             sum(r["verdict"] == "BENIGN" for r in results),
+             sum(r["verdict"] == "error" for r in results), out))
+    return results
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -328,33 +364,7 @@ def main():
     print("%d skill(s) to try, %d confirmed claim(s) between them"
           % (len(groups), sum(len(g) for g in groups)))
 
-    out = Path(args.out)
-    out.mkdir(parents=True, exist_ok=True)
-
-    def try_one(units):
-        head = units[0]
-        try:
-            result = run_court(units, args.timeout, args.recursive)
-        except Exception as error:                       # one skill, not the run
-            result = {"skill": head.get("skill"), "path": head.get("path"),
-                      "claim": None, "verdict": "error", "judge_verdict": None,
-                      "reason": "%s: %s" % (type(error).__name__, error),
-                      "forensics": None, "indictment": None, "judgement": None}
-        write_report(out, result)
-        print("%-55s %-10s %s" % (result["skill"], result["verdict"],
-                                  result["reason"][:60]), flush=True)
-        return result
-
-    with ThreadPoolExecutor(max_workers=args.max_parallel) as pool:
-        results = list(pool.map(try_one, groups))
-
-    (out / "court.json").write_text(
-        json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
-
-    print("\n%d MALICIOUS, %d BENIGN, %d error, written to %s"
-          % (sum(r["verdict"] == "MALICIOUS" for r in results),
-             sum(r["verdict"] == "BENIGN" for r in results),
-             sum(r["verdict"] == "error" for r in results), out))
+    try_skills(groups, args.out, args.timeout, args.recursive, args.max_parallel)
 
 
 if __name__ == "__main__":

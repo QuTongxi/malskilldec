@@ -1,32 +1,53 @@
 # MalSkillDet
 
-Three stages. The static one accuses a skill of malicious types; the dynamic one
+Three steps. The static one accuses a skill of malicious types; the dynamic one
 executes the skill and tries to make the accusation show itself; the final one
-tries the accusations the machine confirmed and returns a verdict.
+reads the evidence the machine confirmed and returns a verdict.
+
+**The dynamic step runs to completion first, and only then does the final one
+judge.** That is the only order we recommend, and it is not a preference: the
+court's unit of judgement is a *skill*, not a claim — one chain routinely spans
+several claims (a single `curl | bash` lands `suspicious_download`,
+`malicious_code` and `unverifiable_dependency` at once), so trying them one at a
+time both repeats the work and shows each pass a third of the story. A skill can
+only be tried once every claim of it has been run.
 
 ```bash
 uv run python main.py <folder> [-o run/] [--disable-codeql] [--round 3]
 ```
 
-`main.py` is the whole thing: it scans, validates and judges, and needs nothing
-but the folder. Everything lands under `--out`:
+`main.py` runs the three steps in that order and needs nothing but the folder.
+Everything lands under `--out`:
 
 ```
-static.json              claims and findings per skill
-dynamic/<skill>.json     every round of every claim, with the judgement
-dynamic/summary.json     one line per skill
-court/<skill>-<claim>.md testimony, indictment and judgement, to read
+static.json              step 1: claims and findings per skill
+dynamic/<skill>.json     step 2: every round of every claim, with the review
+dynamic/summary.json     step 2: one line per skill
+court/<skill>.md         step 3: forensics, indictment and judgement, to read
+court/court.json         step 3: one court result per skill tried
 verdicts.json            one verdict per skill in the folder
 ```
 
-The stages also stand alone, which is how you re-run one of them without
-paying for the others again:
+## The three steps on their own
+
+Each step is also its own entry point, taking the previous one's output as its
+input. This is how you re-run one of them without paying for the others again —
+a new prompt in the court, say, costs nothing but step 3.
 
 ```bash
+# 1. static: a folder of skills -> claims
 uv run python static/pipeline.py <folder> [-o report.json] [--disable-codeql]
+
+# 2. dynamic: claims -> machine records, one result file per skill
 uv run python dynamic/pipeline.py --static-report report.json --out results/
-uv run python final/court.py --evidence results/ --out court/
+
+# 3. final: confirmed records -> a verdict per skill
+uv run python final_v2/court.py --evidence results/ --out court_v2/
 ```
+
+Step 2 no longer judges anything, so every skill it finishes is left
+`PENDING_COURT`; step 3 takes the whole `results/` directory and keeps only the
+claims a reviewer confirmed. Skills with nothing confirmed never reach it.
 
 # Static analysis
 
@@ -94,8 +115,10 @@ claim ──> generator ──prompt──> tester ──evidence──> reviewe
                        confirmed / rounds spent
                                   │
                                   v
-                          final judge ──Malicious──> skill done
-                                     └──Benign─────> next claim
+                        next claim of the skill
+                                  │
+                                  v
+                    every claim run ──> PENDING_COURT
 ```
 
 - `dynamic/generator/prepare.py` — one LLM pass that drops pattern matches on
@@ -124,57 +147,81 @@ build noise dropped, tool output cut to 100 characters, network reduced to the
 names resolved and the addresses connected to.
 
 One container per skill, destroyed with it; the claims of one skill share it.
-Skills run in parallel, claims run in order.
+Skills run in parallel, claims run in order. Every claim is run — this step never
+stops early on a verdict, because it produces no verdict. The static anchors
+(`rule_id`, `file:line`, the matched line) travel with each claim into the result
+file: they are the coordinate the court's forensics stage starts from.
 
 # Final judgement
 
-The first two stages produce evidence; this one decides what it means. Its input
-is *one* claim the reviewer confirmed, and its output is a verdict on the skill.
-The two earlier stages are believed here: a confirmed record is a fact, and the
-question is only whether the facts amount to an attack.
+The first two steps produce evidence; this one decides what it means. Its input
+is *every* claim of one skill that a reviewer confirmed, and its output is a
+verdict on the skill. The two earlier steps are believed here: a confirmed record
+is a fact, and the question is only whether the facts amount to an attack.
 
 ```bash
-uv run python final/court.py --evidence results/ --out court/
+uv run python final_v2/court.py --evidence results/ --out court_v2/
 ```
 
 ```
-skill dir ──> defendant ──testimony──┐
-                                     ├──> prosecutor ──indictment──> judge ──> verdict
-confirmed claim ──evidence───────────┘        (no charge: acquitted)
+skill dir ─────────────┐
+                       ├──> forensics ──facts──> prosecutor ──indictment──> judge ──> verdict
+confirmed claims ──────┘                       (no charge: acquitted)
 ```
 
-- `final/defendant.py` — reads the skill and writes what it says it is: entry
-  points, dependencies, install steps, permissions. It is not asked to be
-  suspicious; the testimony is only useful as a statement to be held against the
-  records.
-- `final/prosecutor.py` — sees the testimony and the confirmed evidence, and
-  charges. Any disagreement between the two is already grounds, and anything it
-  cannot name precisely enough to call harmless is charged. It over-charges by
-  design: over 14 runs, including three benign skills, it charged 14 times. Its
-  `BENIGN` is a formality kept for completeness — treat the indictment's *charges
-  and quotes* as its output, not its verdict, and expect the discrimination to
-  happen at the judge.
-- `final/judge.py` — never sees the skill, so a skill that talks its way past a
-  reader cannot talk to it. It has what the prosecutor does not: common
-  knowledge and a whitelist, which is what lets `pypi.org` be dismissed and an
-  unknown release asset not be. Acquittal must be earned charge by charge —
-  "no evidence it was exploited" is not a refutation, only "it cannot be" — but
-  the burden runs the other way too: a charge nobody can pin on the skill is not
-  a conviction. `MALICIOUS` has to rest on a passage the indictment quoted,
-  because a charge carried by runtime behaviour alone cannot be told apart from
-  something the *test agent* invented; that rule is enforced in code because the
-  judge states the condition and then sentences past it. The verdict is binary:
-  a SUSPICIOUS grade used to exist and, since anything non-BENIGN ends the
-  skill, it became the door every doubt walked through — 36 of its 61 uses over
-  the 221-skill run were on skills that were benign.
-- `final/tools.py` — `read_file`, `grep`, `ls`, `dir_tree` for the two stages
-  that may read the skill, closed over the skill directory: the root is never a
-  parameter, so a path leading out of it comes back as an error.
-- `final/court.py` — the three in order, the CLI, and `run_court(evidence)`,
-  which `dynamic/pipeline.py` calls as its final judge.
+Three stages, and each one's output is the next one's only input. Whatever a
+stage fails to carry across stops existing there.
 
-`MALICIOUS` ends the skill; only `BENIGN` moves on to its next claim. `--evidence` takes a dynamic result file, a directory of them, or a
-single claim, and keeps only the claims a reviewer confirmed. Each stage writes
-a whole report in one call, so its budget is `--court-timeout` (300s), not the
-20 seconds of the round loop.
+- `final_v2/forensics.py` — the only stage that sees raw material: the machine
+  records and the skill directory. It writes down what happened — where each
+  accused action landed in the trace, which passage of the skill produced it, how
+  wide it reached — and, separately, the dangerous actions whose identifiers
+  appear *nowhere* in the skill, because those belong to the test agent and not
+  to the defendant. Method is machine-first: find the landing action, then take
+  its identifiers (domain, package, path, flag) back to the text, where "not
+  found" is provable. It does not judge, and it is graded on accuracy and
+  completeness rather than brevity.
+- `final_v2/prosecutor.py` — sees the forensics report and nothing else. It
+  answers the four questions of maliciousness and files at most two charges. Its
+  one tool is `read_guide`, the constitutive elements of the eight charge
+  categories, and those elements — a conjunction of necessary conditions, one
+  missing and the charge is dropped — are its only convergence mechanism. It
+  holds no whitelist and grants no exemption from experience. It may return
+  `BENIGN`, which ends the court right there. Its most load-bearing field is
+  *preconditions*: the facts outside the evidence that the charge depends on
+  (is `openclawcli.forum` related to OpenClaw, is this value a real credential),
+  which turn the judge's question from "is this dangerous" into "is this
+  precondition true".
+- `final_v2/judge.py` — gets the indictment and nothing else: no tools, no
+  forensics report, no skill directory. A skill that talks its way past a reader
+  cannot talk to this stage; the price is that a quote the prosecutor failed to
+  carry over verbatim is gone, which is why both earlier stages are told to carry
+  quotes across unchanged. It checks completeness, preconditions and precedents,
+  and sentences. `prompts/precedents.md` is the whitelist and the case law — the
+  one place experience is patched in. The verdict is binary; a middle grade would
+  only be folded into one of the two, and folding is what turned every doubt into
+  a conviction in the first version.
+- `final_v2/tools.py` — `read_file`, `grep`, `ls`, `dir_tree` for forensics,
+  closed over the skill directory: the root is never a parameter, so a path
+  leading out of it comes back as an error. Plus `read_guide` for the prosecutor.
+- `final_v2/prompts/` — `forensics.md`, `prosecutor.md`, `judge.md`,
+  `precedents.md`, and `charges/` (one file per malicious type). The prompts are
+  the design; `references/DESIGN.md` is the reasoning behind them, down to the
+  32 errors of the first version that each rule answers.
+- `final_v2/court.py` — the three in order, the evidence rendering, the CLI, and
+  `try_skills(groups, out)`, which `main.py` calls as its third step.
 
+Three design rules run through all of it: the skill's own text can convict but
+never acquit ("it is the declared feature" is not a defence, since a malicious
+skill necessarily declares its attack); attribution is a hard gate (an action
+shown to be the test agent's invention cannot convict); and only forensics sees
+the raw material.
+
+`--evidence` takes a dynamic result file, a directory of them, or a single claim
+unit, and keeps only the claims a reviewer confirmed, grouped by skill. Each
+stage writes a whole report in one call, so its budget is `--timeout` (300s), not
+the 20 seconds of the round loop.
+
+The first version — testimony / cross-examination / sentencing, one *claim* per
+trial — is kept under `references/final/` for comparison, along with the design
+notes that replaced it.

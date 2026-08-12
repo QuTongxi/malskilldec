@@ -7,10 +7,12 @@
 
 Every skill the static layer accused is denoised, given a container, and worked
 through claim by claim.  A claim runs generate -> test -> review until the
-reviewer confirms the capability or the round budget is spent.  By default the
-final judge then decides whether the skill is malicious, which ends the skill,
-or benign, which moves on to its next claim.  Pass `--skip-court` to stop after
-review and leave judging to `final/court.py`.
+reviewer confirms the capability or the round budget is spent.  This stage stops
+there: it produces evidence, it does not judge.  Every skill it finishes leaves
+`PENDING_COURT`, and `final_v2/court.py` reads the whole output directory
+afterwards.  Judging is a separate step because the court tries a *skill* on all
+of its confirmed claims at once, which cannot be done while the claims are still
+being run one at a time.
 
 Skills run in parallel, claims of one skill run in order, and a skill's
 container is destroyed with it.
@@ -26,10 +28,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "final"))
 
-import court
 from generator import generator, helper, prepare
 from reviewer import reviewer
 from tester import build_docker
@@ -120,13 +119,12 @@ def apply_prune(skill, args):
 
 
 def run_skill(skill, args):
-    """Denoise, take a container, and walk the claims until one is malicious."""
+    """Denoise, take a container, and work through every claim of the skill."""
     skill = apply_prune(skill, args)
     log("%s: %d claims, denoising" % (skill["skill"], len(skill["claims"])))
     if not skill["claims"]:
         return {"skill": skill["skill"], "path": skill["path"],
-                "dropped_findings": [], "testimony": None,
-                "claims": [], "verdict": "BENIGN"}
+                "dropped_findings": [], "claims": [], "verdict": "BENIGN"}
 
     skill = prepare.denoise(skill, args.loop_timeout, args.loop_recursive)
     log("%s: %d claims after denoising (%d findings dropped)"
@@ -143,52 +141,28 @@ def run_skill(skill, args):
             % (skill["skill"], len(skill["claims"])))
 
     result = {"skill": skill["skill"], "path": skill["path"],
-              "dropped_findings": skill["dropped"], "testimony": None,
-              "claims": [], "verdict": "BENIGN"}
+              "dropped_findings": skill["dropped"], "claims": [], "verdict": "BENIGN"}
     if not skill["claims"]:
         return result
 
     skill_md = read_skill_md(skill["path"])
     container = build_docker.Container(skill["path"])
     tester = Tester(container)
-    skip_court = getattr(args, "skip_court", False)
     try:
         for claim in skill["claims"]:
             log("  %s / %s (score %d)" % (skill["skill"], claim["type"], claim["score"]))
             rounds = run_claim(claim, skill_md, tester, args)
-            entry = {"type": claim["type"], "level": claim["level"],
-                     "score": claim["score"], "groups": claim["metadata"]["groups"],
-                     "anchors": anchors(claim), "rounds": rounds}
-            if skip_court:
-                result["claims"].append(entry)
-                continue
-
-            unit = {"skill": skill["skill"], "path": skill["path"],
-                    "claim": {"type": claim["type"], "level": claim["level"],
-                              "score": claim["score"], "groups": claim["metadata"]["groups"],
-                              "anchors": anchors(claim)},
-                    "rounds": rounds}
-            # The testimony only depends on the directory, so the claims of one
-            # skill share the one the first of them paid for.
-            judgement = court.run_court(unit, args.court_timeout, args.loop_recursive,
-                                        testimony=result["testimony"])
-            result["testimony"] = judgement.pop("testimony")
-            log("    court: %s (%s)" % (judgement["verdict"], judgement["reason"]))
-
-            entry["judgement"] = judgement
-            result["claims"].append(entry)
-            if judgement["verdict"] == "MALICIOUS":
-                result["verdict"] = "MALICIOUS"
-                break
+            result["claims"].append(
+                {"type": claim["type"], "level": claim["level"],
+                 "score": claim["score"], "groups": claim["metadata"]["groups"],
+                 "anchors": anchors(claim), "rounds": rounds})
     finally:
         container.close()
 
-    if skip_court:
-        confirmed = sum(
-            1 for c in result["claims"]
-            if c["rounds"] and c["rounds"][-1]["reviewer"]["verdict"] == "confirmed")
-        result["verdict"] = "PENDING_COURT"
-        result["confirmed_claims"] = confirmed
+    result["confirmed_claims"] = sum(
+        1 for c in result["claims"]
+        if c["rounds"] and c["rounds"][-1]["reviewer"]["verdict"] == "confirmed")
+    result["verdict"] = "PENDING_COURT"
     return result
 
 
@@ -196,8 +170,7 @@ def run_all(skills, args, out):
     """Test every accused skill, one result file each, and return the results.
 
     `args` carries the budgets: round, tester_timeout, tester_recursive,
-    loop_timeout, loop_recursive, court_timeout, max_parallel, and the optional
-    prune / skip-court knobs.
+    loop_timeout, loop_recursive, max_parallel, and the optional prune knobs.
     """
     skills = helper.order_skills(skills)
     out = Path(out)
@@ -229,8 +202,7 @@ def run_all(skills, args, out):
         summary = [{"skill": r["skill"], "verdict": r["verdict"],
                     "claims": [{"type": c["type"],
                                 "rounds": len(c["rounds"]),
-                                "confirmed": c["rounds"][-1]["reviewer"]["verdict"] == "confirmed",
-                                "judgement": (c.get("judgement") or {}).get("verdict")}
+                                "confirmed": c["rounds"][-1]["reviewer"]["verdict"] == "confirmed"}
                                for c in r.get("claims", [])]}
                    for r in results]
         (out / "summary.json").write_text(
@@ -264,8 +236,7 @@ def run_all(skills, args, out):
     summary = [{"skill": r["skill"], "verdict": r["verdict"],
                 "claims": [{"type": c["type"],
                             "rounds": len(c["rounds"]),
-                            "confirmed": c["rounds"][-1]["reviewer"]["verdict"] == "confirmed",
-                            "judgement": (c.get("judgement") or {}).get("verdict")}
+                            "confirmed": c["rounds"][-1]["reviewer"]["verdict"] == "confirmed"}
                            for c in r.get("claims", [])]}
                for r in results]
     (out / "summary.json").write_text(
@@ -300,13 +271,8 @@ def main():
     parser.add_argument("--tester-recursive", type=int, default=20)
     parser.add_argument("--loop-timeout", type=int, default=20)
     parser.add_argument("--loop-recursive", type=int, default=50)
-    # A court stage writes a whole report in one call and needs longer than the
-    # short structured answers of the generate/test/review loop.
-    parser.add_argument("--court-timeout", type=int, default=300)
     parser.add_argument("--max-parallel", type=int, default=8, help="skills tested at once")
     parser.add_argument("--skills", nargs="*", help="only these skills, by name")
-    parser.add_argument("--skip-court", action="store_true",
-                        help="run generate/test/review only; judge later with final/court.py")
     add_prune_args(parser)
     args = parser.parse_args()
 
