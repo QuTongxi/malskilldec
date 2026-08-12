@@ -10,7 +10,6 @@ Its report is the only thing the two stages after it will ever see, so it is
 graded on accuracy and completeness, not on brevity.  It does not judge.
 """
 
-import re
 import sys
 from pathlib import Path
 
@@ -34,15 +33,6 @@ HUMAN_PROMPT = prompts.load("forensics", "human")
 # does not honour it.  Narrowing top_p is the constraint that does apply.  The two
 # stages after this one read both values from here so they cannot drift apart.
 SEED, TOP_P = 42, 0.01
-
-# The court stops here when the report holds no chain: with nothing attributed
-# there is nothing to charge, and the two stages after this one would only be
-# reading an empty page.
-CHAIN = re.compile(r"^#{2,4}\s*链条\s*\d+", re.MULTILINE)
-
-
-def has_chain(report):
-    return bool(CHAIN.search(report or ""))
 
 
 def investigate(skill, evidence, skill_path, timeout=300, recursive=50):

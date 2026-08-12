@@ -208,12 +208,6 @@ def run_court(units, timeout=300, recursive=50):
         head.get("skill") or Path(head["path"]).name,
         render_evidence(units), head["path"], timeout, recursive)
 
-    if not forensics.has_chain(result["forensics"]):
-        # No chain means nothing was both observed and attributed, so there is
-        # nothing to charge and nothing to sentence.
-        result["reason"] = "forensics found no attributed chain"
-        return result
-
     result["indictment"] = prosecutor.accuse(result["forensics"], timeout, recursive)
     if result["indictment"]["verdict"] == "BENIGN":
         result["reason"] = "the prosecutor brought no charge"
