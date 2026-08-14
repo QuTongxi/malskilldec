@@ -1,10 +1,15 @@
-"""The judge.  Three checks, in order, and then a verdict.
+"""The judge.  Four checks, in order, and then a verdict.
 
-It gets the indictment and nothing else: no tools, no forensics report, no skill
-directory.  A skill that talks its way past a reader cannot talk to this stage,
-and the price is that whatever the prosecutor failed to carry over verbatim no
-longer exists -- which is why both stages before it are told to carry quotes
-across unchanged.
+It gets the indictment and nothing else: no forensics report, no skill directory.
+A skill that talks its way past a reader cannot talk to this stage, and the price
+is that whatever the prosecutor failed to carry over verbatim no longer exists --
+which is why both stages before it are told to carry quotes across unchanged.
+
+Its one tool is `check_source`, the domain list in `sources.yaml`.  That list is
+the whole of the court's whitelist now: the general rules that used to sit next to
+it in `precedents.md` were folded into the four steps, because a rule about
+whether an action happened at all was never a whitelist entry -- it was a step the
+judge had already walked past by the time it read the list.
 
 The verdict is binary.  This is the only stage that decides, so a middle grade
 would only be folded into one of the two anyway, and folding is what turned
@@ -23,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "dynamic"))
 
 import prompts
+import tools
 from llm import chat_model
 
 SYSTEM_PROMPT = prompts.load("judge")
@@ -43,7 +49,7 @@ def adjudicate(indictment, timeout=300, recursive=50):
     """Return {verdict, report}: the sentence passed on the indictment."""
     agent = create_agent(
         chat_model(temperature=0.0, timeout=timeout, seed=SEED, top_p=TOP_P),
-        tools=[],
+        tools=tools.source_tool(),
         system_prompt=SYSTEM_PROMPT,
         response_format=ToolStrategy(Judgement),
     )

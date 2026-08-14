@@ -9,4 +9,5 @@ dependencies = [
     "langchain-openai",
     "pydantic",
     "python-dotenv",
+    "pyyaml",
 ]

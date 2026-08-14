@@ -192,20 +192,27 @@ stage fails to carry across stops existing there.
   (is `openclawcli.forum` related to OpenClaw, is this value a real credential),
   which turn the judge's question from "is this dangerous" into "is this
   precondition true".
-- `final_v2/judge.py` — gets the indictment and nothing else: no tools, no
-  forensics report, no skill directory. A skill that talks its way past a reader
-  cannot talk to this stage; the price is that a quote the prosecutor failed to
-  carry over verbatim is gone, which is why both earlier stages are told to carry
-  quotes across unchanged. It checks completeness, preconditions and precedents,
-  and sentences. `prompts/precedents.md` is the whitelist and the case law — the
-  one place experience is patched in. The verdict is binary; a middle grade would
+- `final_v2/judge.py` — gets the indictment and nothing else: no forensics
+  report, no skill directory. A skill that talks its way past a reader cannot
+  talk to this stage; the price is that a quote the prosecutor failed to carry
+  over verbatim is gone, which is why both earlier stages are told to carry
+  quotes across unchanged. Four checks in order — attribution and closure,
+  preconditions, sources, harm — and then a binary verdict; a middle grade would
   only be folded into one of the two, and folding is what turned every doubt into
-  a conviction in the first version.
+  a conviction in the first version. Its one tool is `check_source`, which
+  answers a question the judge used to answer from impression: is this domain
+  allowed to be visited, downloaded from, or uploaded to.
+- `final_v2/sources.yaml` — that tool's backing list, one entry per domain, each
+  granting some subset of visit / download / upload and carrying a note that
+  travels back with the answer. It is the whole of the court's whitelist: the
+  rules that used to sit beside it in `precedents.md` were never about a domain,
+  and now live in the four steps of `judge.md` where they are actually applied.
 - `final_v2/tools.py` — `read_file`, `grep`, `ls`, `dir_tree` for forensics,
   closed over the skill directory: the root is never a parameter, so a path
-  leading out of it comes back as an error. Plus `read_guide` for the prosecutor.
+  leading out of it comes back as an error. Plus `read_guide` for the prosecutor
+  and `check_source` for the judge.
 - `final_v2/prompts/` — `forensics.md`, `prosecutor.md`, `judge.md`,
-  `precedents.md`, and `charges/` (one file per malicious type). The prompts are
+  `payload.md`, and `charges/` (one file per malicious type). The prompts are
   the design; `references/DESIGN.md` is the reasoning behind them, down to the
   32 errors of the first version that each rule answers.
 - `final_v2/court.py` — the three in order, the evidence rendering, the CLI, and

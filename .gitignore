@@ -5,3 +5,10 @@ dataset/
 eval_runs/
 validation_shortlist_221/
 .env
+
+# marketplace 的数据与产出：8k 个 skill 的快照、扫描结果、索引，共 1.4G
+marketplace/real_dataset_8k/
+marketplace/scan/
+marketplace/.cache/
+marketplace/frame.json
+marketplace/manifest.json

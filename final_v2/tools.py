@@ -10,6 +10,13 @@ files.  It is a tool rather than part of the prompt because the prosecutor shoul
 read only the categories it is actually considering, and because eight guides
 inlined at once would drown the forensics report they are meant to be applied to.
 
+`source_tool()` builds the single tool the judge is given: `sources.yaml`, one
+entry per domain saying which of visit / download / upload that domain is allowed
+to be on the far end of.  It is a tool rather than prompt text because the list is
+long, because most of it is irrelevant to any one indictment, and because a
+destination the judge has to ask about is one it cannot quietly reason its way
+around -- the note that comes back is a fact it has to answer to.
+
 Every tool returns text, and every tool returns its error as text too -- an agent
 that mistypes a path should read the mistake and try again rather than crash the
 run.
@@ -19,6 +26,7 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
 from langchain_core.tools import tool
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -30,6 +38,10 @@ MAX_CHARS = 20000        # characters returned by any tool
 MAX_ENTRIES = 200        # entries listed by ls / dir_tree
 MAX_MATCHES = 60         # matches returned by grep
 MAX_FILE_BYTES = 1 << 20  # files larger than this are only read up to here
+
+SOURCES = Path(__file__).resolve().parent / "sources.yaml"
+CATEGORIES = ("visit", "download", "upload")
+DEFAULT = "DEFAULT"      # the reserved key in sources.yaml, not a domain
 
 SKIP = {".git", "node_modules", "__pycache__", ".venv", "venv", ".mypy_cache",
         ".pytest_cache", "dist", "build"}
@@ -83,6 +95,94 @@ def guide_tool():
         return clip(prompts.text("charges/%s" % name))
 
     return [read_guide]
+
+
+def load_sources(path=SOURCES):
+    """Read `sources.yaml` into ({host: entry}, default_note)."""
+    document = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    default = str(document.pop(DEFAULT, "")).strip()
+    entries = {}
+    for host, entry in document.items():
+        entry = entry or {}
+        entries[str(host).strip().lower().strip(".")] = {
+            "permissions": [c for c in CATEGORIES
+                            if c in {str(p).strip().lower()
+                                     for p in (entry.get("permissions") or [])}],
+            "note_passed": (entry.get("note_passed") or "").strip(),
+            "note_banned": (entry.get("note_banned") or "").strip(),
+        }
+    return entries, default
+
+
+def host_of(url):
+    """The bare hostname of a URL, or of a host given without a scheme."""
+    text = re.sub(r"^[a-z][a-z0-9+.-]*://", "", (url or "").strip(), flags=re.IGNORECASE)
+    text = re.split(r"[/?#]", text)[0].rsplit("@", 1)[-1]   # path, query, userinfo
+    if text.startswith("["):                                # [::1]:8080
+        return text[1:].partition("]")[0].strip().lower()
+    if text.count(":") == 1:                                # host:port
+        text = text.partition(":")[0]
+    return text.strip().lower().strip(".")
+
+
+def lookup(entries, host):
+    """The most specific entry for `host`, walking up its parent domains.
+
+    `a.b.example.com` tries itself, then `b.example.com`, then `example.com`, and
+    stops before the bare TLD -- so one entry for `vercel.app` covers everything
+    under it, while `api.github.com` can still differ from `github.com`.
+    """
+    labels = host.split(".")
+    for i in range(len(labels) - 1):
+        candidate = ".".join(labels[i:])
+        if candidate in entries:
+            return candidate, entries[candidate]
+    return (host, entries[host]) if host in entries else (None, None)
+
+
+def source_tool(path=SOURCES):
+    """The judge's one tool: what this destination is allowed to be used for."""
+    entries, default = load_sources(path)
+
+    def render(host, matched, category, result, permissions, note):
+        lines = ["host: %s" % host,
+                 "matched entry: %s" % (matched or "<none, DEFAULT applies>"),
+                 "category: %s" % category,
+                 "result: %s" % result]
+        if matched:
+            lines.append("permissions: %s" % (", ".join(permissions) or "<none>"))
+        if note:
+            lines.append("note: %s" % note)
+        return "\n".join(lines)
+
+    @tool
+    def check_source(category: str, url: str) -> str:
+        """Look up one network destination in the court's source list.
+
+        Args:
+            category: visit to fetch content that will only be read or parsed,
+                download to fetch something that will be executed or loaded,
+                upload to send local data, files or credentials outwards.
+            url: the destination, a full URL or a bare hostname.
+        """
+        want = (category or "").strip().lower()
+        if want not in CATEGORIES:
+            return ("error: %r is not a category. the three are: %s"
+                    % (category, ", ".join(CATEGORIES)))
+
+        host = host_of(url)
+        if not host:
+            return "error: no hostname in %r" % url
+
+        matched, entry = lookup(entries, host)
+        if entry is None:
+            return render(host, None, want, "NOT LISTED", [], default)
+        allowed = want in entry["permissions"]
+        return render(host, matched, want, "PERMITTED" if allowed else "BANNED",
+                      entry["permissions"],
+                      entry["note_passed"] if allowed else entry["note_banned"])
+
+    return [check_source]
 
 
 def read_tools(root):

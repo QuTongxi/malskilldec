@@ -6,7 +6,7 @@
 Three LLM stages, in order.  Forensics reads the machine records and the skill
 and writes down the facts; the prosecutor answers the four questions and files
 at most two charges against those facts; the judge -- who sees only the
-indictment -- checks completeness, preconditions and precedents, and sentences.
+indictment -- checks attribution, preconditions and sources, and sentences.
 
     run_court(units) -> {"verdict": "MALICIOUS" | "BENIGN", ...}
 
