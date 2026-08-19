@@ -7,7 +7,8 @@ Everything the paper reports, beyond the implementation in the repository root.
 | `labels.csv` | Ground truth for the 200-skill benchmark, one row per skill. |
 | `dataset-100x100-v1.0.0.zip` | The 200 skill directories themselves, 100 benign and 100 malicious. |
 | `qwen3max-main-run.zip` | Every raw output of the main Qwen3-max configuration. |
-| `BASELINES.md` | Source, version, and verdict mapping for each of the nine baselines. |
+| `marketplace-findings.csv` | The skills the marketplace audit confirmed, one row each. |
+| `BASELINES.md` | Source, pinned state, and verdict criterion for each of the nine baselines. |
 
 ## `labels.csv`
 
@@ -22,6 +23,13 @@ Everything the paper reports, beyond the implementation in the repository root.
 The label of a skill is its directory, `benign/` or `malicious/`. `score.py`
 derives ground truth from the layout and nothing else, so moving a directory is
 the only way to relabel a skill.
+
+## `marketplace-findings.csv`
+
+The skills that the audit of 8,000 SkillsMP skills confirmed malicious or in need
+of immediate removal, after two authors reviewed every flagged report
+independently and kept only the cases they agreed on. All of them were reported
+to the SkillsMP maintainers before publication.
 
 ## `dataset-100x100-v1.0.0.zip`
 
