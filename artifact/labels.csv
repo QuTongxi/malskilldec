@@ -1,0 +1,201 @@
+relative_path,skill_name,label,malicious_categories,category_evidence
+benign/adme-prediction,adme-prediction,benign,,
+benign/agent-mux__5945bfe484,agent-mux__5945bfe484,benign,,
+benign/agently-runtime__bed0c9617b,agently-runtime__bed0c9617b,benign,,
+benign/agents-md-generator__5f91a3eca3,agents-md-generator__5f91a3eca3,benign,,
+benign/akshare,akshare,benign,,
+benign/apple-notes,apple-notes,benign,,
+benign/brainstorming,brainstorming,benign,,
+benign/browser-use,browser-use,benign,,
+benign/build-and-slice-loop__71d946adb4,build-and-slice-loop__71d946adb4,benign,,
+benign/buildkite-helper__b129535e0e,buildkite-helper__b129535e0e,benign,,
+benign/capability-evolver,capability-evolver,benign,,
+benign/clawdbot-logs1kzm,clawdbot-logs1kzm,benign,,
+benign/create-brand__47317f9654,create-brand__47317f9654,benign,,
+benign/create-plugin__6af6db9e72,create-plugin__6af6db9e72,benign,,
+benign/create-threat-model__4feaaf3ab8,create-threat-model__4feaaf3ab8,benign,,
+benign/cryptocurrency-trader,cryptocurrency-trader,benign,,
+benign/data2story__e0a8c08812,data2story__e0a8c08812,benign,,
+benign/datamoat__46a6375ad2,datamoat__46a6375ad2,benign,,
+benign/deep-research__2,deep-research__2,benign,,
+benign/derecho-argentino,derecho-argentino,benign,,
+benign/derive-plan-from-spec,derive-plan-from-spec,benign,,
+benign/design-consultation,design-consultation,benign,,
+benign/docker-expert,docker-expert,benign,,
+benign/docx,docx,benign,,
+benign/docx__3,docx__3,benign,,
+benign/excel,excel,benign,,
+benign/experiment-bfts-runner,experiment-bfts-runner,benign,,
+benign/extract-requirements-from-ticket,extract-requirements-from-ticket,benign,,
+benign/feishu-drive,feishu-drive,benign,,
+benign/feishu-perm,feishu-perm,benign,,
+benign/find-skills__2,find-skills__2,benign,,
+benign/find-skills__3,find-skills__3,benign,,
+benign/find-skills__4,find-skills__4,benign,,
+benign/frontend-design,frontend-design,benign,,
+benign/frontend-design__3,frontend-design__3,benign,,
+benign/frontend-dev,frontend-dev,benign,,
+benign/frontend-slides,frontend-slides,benign,,
+benign/fullstack-dev,fullstack-dev,benign,,
+benign/gate-info-macroimpact,gate-info-macroimpact,benign,,
+benign/geometry-optimizer,geometry-optimizer,benign,,
+benign/godot-gdscript-patterns,godot-gdscript-patterns,benign,,
+benign/humanizer,humanizer,benign,,
+benign/humanizer__2,humanizer__2,benign,,
+benign/markdown-converter,markdown-converter,benign,,
+benign/markitdown,markitdown,benign,,
+benign/md-to-office,md-to-office,benign,,
+benign/memory-hygiene,memory-hygiene,benign,,
+benign/memory-setup,memory-setup,benign,,
+benign/meridian-diagnostics,meridian-diagnostics,benign,,
+benign/minimax-docx,minimax-docx,benign,,
+benign/ml-paper-writing,ml-paper-writing,benign,,
+benign/mol-2d-viewer,mol-2d-viewer,benign,,
+benign/multi-search-engine,multi-search-engine,benign,,
+benign/nmr-prediction,nmr-prediction,benign,,
+benign/notion,notion,benign,,
+benign/office-mcp,office-mcp,benign,,
+benign/office365-connector,office365-connector,benign,,
+benign/ontology,ontology,benign,,
+benign/openai-whisper,openai-whisper,benign,,
+benign/openai-whisper-api,openai-whisper-api,benign,,
+benign/pdf__3,pdf__3,benign,,
+benign/playwright-cli__2,playwright-cli__2,benign,,
+benign/powerskills-outlook,powerskills-outlook,benign,,
+benign/ppt-creator,ppt-creator,benign,,
+benign/ppt-orchestra-skill,ppt-orchestra-skill,benign,,
+benign/pptx,pptx,benign,,
+benign/pptx-creator,pptx-creator,benign,,
+benign/python-testing,python-testing,benign,,
+benign/react,react,benign,,
+benign/reaction-data-extraction,reaction-data-extraction,benign,,
+benign/review-changes-structured,review-changes-structured,benign,,
+benign/run-quality-gates-and-triage,run-quality-gates-and-triage,benign,,
+benign/secondary_style_perturbation,secondary_style_perturbation,benign,,
+benign/self-improvement,self-improvement,benign,,
+benign/self-improvement__2,self-improvement__2,benign,,
+benign/sherpa-onnx-tts,sherpa-onnx-tts,benign,,
+benign/skill-creator,skill-creator,benign,,
+benign/skill-lookup,skill-lookup,benign,,
+benign/skill-router__b3866d2c49,skill-router__b3866d2c49,benign,,
+benign/sre-analyze-alert__63b4776b73,sre-analyze-alert__63b4776b73,benign,,
+benign/stock-evaluator-v3,stock-evaluator-v3,benign,,
+benign/stock-market-pro,stock-market-pro,benign,,
+benign/summarize,summarize,benign,,
+benign/sync-docs-with-implementation,sync-docs-with-implementation,benign,,
+benign/todo-tracker1,todo-tracker1,benign,,
+benign/trello,trello,benign,,
+benign/twitter-tools,twitter-tools,benign,,
+benign/ui-ux-pro-max__2,ui-ux-pro-max__2,benign,,
+benign/update-plan-from-review-feedback,update-plan-from-review-feedback,benign,,
+benign/vercel-deploy,vercel-deploy,benign,,
+benign/visualization-expert,visualization-expert,benign,,
+benign/weather,weather,benign,,
+benign/web-search,web-search,benign,,
+benign/web-search-advanced-research-paper,web-search-advanced-research-paper,benign,,
+benign/webapp-testing,webapp-testing,benign,,
+benign/wechat-article-fetcher,wechat-article-fetcher,benign,,
+benign/xlsx,xlsx,benign,,
+benign/youtube-transcript,youtube-transcript,benign,,
+benign/youtube-watchar,youtube-watchar,benign,,
+benign/zapier,zapier,benign,,
+malicious/agent-browser-6aigix9qi2tu,agent-browser-6aigix9qi2tu,malicious,SD,court report
+malicious/agent-browser-fopzsipap75u,agent-browser-fopzsipap75u,malicious,SD,court report
+malicious/api-key-rotation-manager__4dc7a40100,api-key-rotation-manager__4dc7a40100,malicious,PI|SE,court report
+malicious/auto-updater-161ks,auto-updater-161ks,malicious,SD|UD|MS,court report
+malicious/auto-updater-3miomc4dvir,auto-updater-3miomc4dvir,malicious,UD|MS,court report
+malicious/auto-updater-96ys3,auto-updater-96ys3,malicious,SD|UD|MS,court report
+malicious/auto-updater-ah1,auto-updater-ah1,malicious,SD,court report
+malicious/auto-updater-ek1qviijfp1,auto-updater-ek1qviijfp1,malicious,SD,court report
+malicious/autoupdate,autoupdate,malicious,SD|UD|MS,court report
+malicious/autoupdater,autoupdater,malicious,SD,court report
+malicious/blrd,blrd,malicious,SD,court report
+malicious/browserautomation,browserautomation,malicious,SD,court report
+malicious/buildin-cli__30a2a56bb4,buildin-cli__30a2a56bb4,malicious,MC|SD|UD,court report
+malicious/cc10x-router,cc10x-router,malicious,MS,court report
+malicious/clawbhub,clawbhub,malicious,SD,court report
+malicious/clawdhab,clawdhab,malicious,SD,court report
+malicious/clawdhub-0ds2em57jf,clawdhub-0ds2em57jf,malicious,SD|UD,court report
+malicious/clawhub,clawhub,malicious,SD,court report
+malicious/clawhub-6yr3b,clawhub-6yr3b,malicious,SD|UD,court report
+malicious/clawhubb,clawhubb,malicious,SD|TP|UD,court report
+malicious/coding-agent-4ilvlj7rs,coding-agent-4ilvlj7rs,malicious,SD|TP|UD|MS,court report
+malicious/coding-agent-pekjzav3x,coding-agent-pekjzav3x,malicious,MC|SD,court report
+malicious/coding-agent696vg,coding-agent696vg,malicious,PI|SD|TP|UD|MS,court report
+malicious/codingagent,codingagent,malicious,SD,court report
+malicious/copywritings,copywritings,malicious,PI|SD|UD,court report
+malicious/create-and-iterate-project-processes__908aff8305,create-and-iterate-project-processes__908aff8305,malicious,MC,court report
+malicious/deep-research-eoo5vd95,deep-research-eoo5vd95,malicious,SD,court report
+malicious/deep-research-v2h55k2w,deep-research-v2h55k2w,malicious,SD,court report
+malicious/deep-research1,deep-research1,malicious,SD,court report
+malicious/deep-researchj,deep-researchj,malicious,PI|SD|UD,court report
+malicious/discord-voicetwhtm,discord-voicetwhtm,malicious,TP,manual read
+malicious/ecap-security-auditor,ecap-security-auditor,malicious,MC|SD|TP|UD|MS,court report
+malicious/ethereum-gas-tracker-abxf0,ethereum-gas-tracker-abxf0,malicious,MC|SD|TP|UD,court report
+malicious/excel-1kl,excel-1kl,malicious,SD,court report
+malicious/finance-news9,finance-news9,malicious,MC|TP|UD|MS,court report
+malicious/gbrain-installation__26cebfa303,gbrain-installation__26cebfa303,malicious,MC|SD|CH|SE|TP|UD|MS,court report
+malicious/github-code-review,github-code-review,malicious,CH,court report
+malicious/github-multi-repo,github-multi-repo,malicious,CH|MS,court report
+malicious/gog-5w7zvby,gog-5w7zvby,malicious,MC|TP,court report
+malicious/gog-g7ksras,gog-g7ksras,malicious,SD,court report
+malicious/google,google,malicious,SD|TP|UD,court report
+malicious/google-drivezqx,google-drivezqx,malicious,PI|SD,court report
+malicious/google-workspace-2z5dp,google-workspace-2z5dp,malicious,MC|SD,court report
+malicious/googleworkspace,googleworkspace,malicious,SD,court report
+malicious/guava-guard,guava-guard,malicious,MC|TP|UD,court report
+malicious/higgsfield-generate__a9be9761e6,higgsfield-generate__a9be9761e6,malicious,SD|TP|UD,court report
+malicious/insider-wallets-finder-1a7pi,insider-wallets-finder-1a7pi,malicious,MC|SD|TP|UD,court report
+malicious/insider-wallets-finder-r6wya,insider-wallets-finder-r6wya,malicious,SD,court report
+malicious/instagramjg,instagramjg,malicious,PI|SD|UD,court report
+malicious/install-popola__1de14d8735,install-popola__1de14d8735,malicious,MC|SD|TP|UD,court report
+malicious/jirayb4nt,jirayb4nt,malicious,PI|SD|CH,court report
+malicious/landgod-computer-use__6e71004332,landgod-computer-use__6e71004332,malicious,MC,court report
+malicious/linkedin-job-application,linkedin-job-application,malicious,SD,court report
+malicious/lost-bitcoin-10li1,lost-bitcoin-10li1,malicious,SD|TP|UD,court report
+malicious/moltbook-lm8,moltbook-lm8,malicious,SD,court report
+malicious/moltbookwmap4,moltbookwmap4,malicious,PI|SD|CH|UD,court report
+malicious/n8nemk,n8nemk,malicious,PI|SD|CH|UD|MS,court report
+malicious/n8nsk,n8nsk,malicious,PI|SD,court report
+malicious/notion-export,notion-export,malicious,MS,court report
+malicious/openclaw-backup-dnkxm,openclaw-backup-dnkxm,malicious,SD|UD|MS,court report
+malicious/openclaw-backup-wrxw0,openclaw-backup-wrxw0,malicious,SD,court report
+malicious/pdf-1wso5,pdf-1wso5,malicious,SD,court report
+malicious/phantom-0jcvy,phantom-0jcvy,malicious,SD,court report
+malicious/phantom-bdacv,phantom-bdacv,malicious,MC|SD|CH|UD,court report
+malicious/polym,polym,malicious,SD,court report
+malicious/polymarket-25nwy,polymarket-25nwy,malicious,SD,court report
+malicious/polymarket-cexex,polymarket-cexex,malicious,SD|UD,court report
+malicious/pptx-creatord,pptx-creatord,malicious,PI|SD|UD,court report
+malicious/privilege-escalation-methods,privilege-escalation-methods,malicious,SD|MS,court report
+malicious/rover,rover,malicious,PI|MC|SD|TP|UD,court report
+malicious/sacred-space-protocol,sacred-space-protocol,malicious,PI,manual read
+malicious/search-xepv0,search-xepv0,malicious,CH|TP,court report
+malicious/skilldeck__366b5cdb7d,skilldeck__366b5cdb7d,malicious,MC|SD|MS,court report
+malicious/solana-07bcb,solana-07bcb,malicious,SD,court report
+malicious/solana-9lplb,solana-9lplb,malicious,SD,court report
+malicious/twitter-6ql,twitter-6ql,malicious,SD|UD,court report
+malicious/twitter-sum,twitter-sum,malicious,SD,court report
+malicious/updater,updater,malicious,SD|UD|MS,court report
+malicious/use-avibe__07d3888baa,use-avibe__07d3888baa,malicious,MC|SD|CH|TP|UD,court report
+malicious/wacli-1sk,wacli-1sk,malicious,MC|TP,court report
+malicious/wacli-xcb,wacli-xcb,malicious,SD,court report
+malicious/wallet-tracker-0ghsk,wallet-tracker-0ghsk,malicious,MC|SD|TP|UD,court report
+malicious/wechate,wechate,malicious,PI|MC|SD|TP|UD,court report
+malicious/whatsapp,whatsapp,malicious,SD,court report
+malicious/workflow__a708400691,workflow__a708400691,malicious,TP,court report
+malicious/x-trends-0heof,x-trends-0heof,malicious,SD|UD,court report
+malicious/yahoo-finance-1h2ji,yahoo-finance-1h2ji,malicious,SD,court report
+malicious/youtube-summarize,youtube-summarize,malicious,SD,court report
+malicious/youtube-summarize-11y0i,youtube-summarize-11y0i,malicious,SD,court report
+malicious/youtube-summarize-35o20,youtube-summarize-35o20,malicious,SD|UD,court report
+malicious/youtube-summarize-ebw5x,youtube-summarize-ebw5x,malicious,SD|TP|UD,court report
+malicious/youtube-thumbnail-grabber,youtube-thumbnail-grabber,malicious,SD,court report
+malicious/youtube-thumbnail-grabber-2dp6g,youtube-thumbnail-grabber-2dp6g,malicious,SD|UD,court report
+malicious/youtube-thumbnail-grabber-sq374,youtube-thumbnail-grabber-sq374,malicious,SD,court report
+malicious/youtube-video-downloader,youtube-video-downloader,malicious,SD,court report
+malicious/youtube-video-downloader-5qfuw,youtube-video-downloader-5qfuw,malicious,SD|UD|MS,court report
+malicious/youtube-video-downloader-fnkxw,youtube-video-downloader-fnkxw,malicious,SD|UD|MS,court report
+malicious/youtube37puq,youtube37puq,malicious,PI|SD,court report
+malicious/zoho-crm,zoho-crm,malicious,SD|UD,court report
+malicious/zohoclaw,zohoclaw,malicious,SD,court report
