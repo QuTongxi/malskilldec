@@ -4,6 +4,14 @@ Three steps. The static one accuses a skill of malicious types; the dynamic one
 executes the skill and tries to make the accusation show itself; the final one
 reads the evidence the machine confirmed and returns a verdict.
 
+## Artifacts
+
+Reproducibility materials are indexed in [`artifact/README.md`](artifact/README.md).
+They include the benchmark, raw evaluation outputs, marketplace findings, and
+the independent harm-based audit of 38 candidate Skills. The 38-Skill audit is
+available both as [browsable reports](artifact/skill-audit-38-v1.0.0/README.md)
+and as a [ZIP archive](artifact/malskilldet-skill-audit-38-v1.0.0.zip).
+
 **The dynamic step runs to completion first, and only then does the final one
 judge.** That is the only order we recommend, and it is not a preference: the
 court's unit of judgement is a *skill*, not a claim — one chain routinely spans

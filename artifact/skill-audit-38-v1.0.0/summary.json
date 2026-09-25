@@ -1,0 +1,276 @@
+{
+  "total": 38,
+  "counts": {
+    "MALICIOUS": 34,
+    "BENIGN": 4,
+    "UNKNOWN": 0
+  },
+  "items": [
+    {
+      "skill_name": "mywholelife",
+      "version_identifier": "4db09c70b0a2",
+      "github_repo": "ChrisZhangJin/mywholelife",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "itr-prep-skill",
+      "version_identifier": "96859bc1e03a",
+      "github_repo": "NidheeshJain/itr-prep-skill",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "agent-army",
+      "version_identifier": "4b15618eec45",
+      "github_repo": "amjad1233/claude-skills",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "email-triage",
+      "version_identifier": "a1ad42be327c",
+      "github_repo": "huifeideyu-1121/email-triage",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "cc-dev-agent",
+      "version_identifier": "7749ad95547d",
+      "github_repo": "immacualate/claude-forge",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "horizon-agentic-reviewer",
+      "version_identifier": "17658fab5ec1",
+      "github_repo": "omonuj/claude-skills",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "gemini-skill",
+      "version_identifier": "13681441c4b4",
+      "github_repo": "pcx-wave/gemini-skill",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "ralph-wiggum-loop",
+      "version_identifier": "4a410c544c72",
+      "github_repo": "xpepper/pr-review-agent-skill",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "webclaw3",
+      "version_identifier": "bda05b23",
+      "github_repo": "fatmind/webclaw3",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "devops",
+      "version_identifier": "c52ad1e",
+      "github_repo": "H3nSte1n/skills",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "visioncraft-skill",
+      "version_identifier": "f31e7b4",
+      "github_repo": "BAI-32/visioncraft-skill",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "chanjing-credentials-guard",
+      "version_identifier": "fce55367",
+      "github_repo": "chanjing-ai/chan-skills",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "evaluating-llms-harness",
+      "version_identifier": "b00510e",
+      "github_repo": "immacualate/claude-forge",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "baoyu-danger-gemini-web",
+      "version_identifier": "3b13b25f",
+      "github_repo": "siatwangmin/coco-skills",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "browser-login-reuse",
+      "version_identifier": "v1.0.2",
+      "github_repo": "sichenai/sichen-skills",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "arbitrum-dapp-skill",
+      "version_identifier": "bddf514fdf11382e782218d33bf1eab7a6b35f05",
+      "github_repo": "longtengsiha/arbitrum-dapp-skill",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "uni-course-scheduler",
+      "version_identifier": "8c688269c016f90e9c281439eadaf8538ec5f749",
+      "github_repo": "ez-hq/uni-course-scheduler",
+      "reviewed_verdict": "BENIGN",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "youtube-thumbnails",
+      "version_identifier": "c2a83dc060276b83ce6ce22cf74d316bb5d35b2d",
+      "github_repo": "biyearly-mesothelioma790/skills",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "new-mac-setup",
+      "version_identifier": "c2a83dc060276b83ce6ce22cf74d316bb5d35b2d",
+      "github_repo": "biyearly-mesothelioma790/skills",
+      "reviewed_verdict": "BENIGN",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "codymaster",
+      "version_identifier": "14cd03c9b12b3087494371e5ccef81005182dcaa",
+      "github_repo": "tody-agent/codymaster",
+      "reviewed_verdict": "BENIGN",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "aso-skill",
+      "version_identifier": "d02716756fa2214a578b4d43ce2b2d50f53b3acf",
+      "github_repo": "furkancingoz/aso-skill",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "MEDIUM"
+    },
+    {
+      "skill_name": "web-use",
+      "version_identifier": "b87ffe67af",
+      "github_repo": "Repository no longer available",
+      "reviewed_verdict": "BENIGN",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "community-skill-installation",
+      "version_identifier": "56d26cfb5b",
+      "github_repo": "Repository no longer available",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "install-promptworld",
+      "version_identifier": "60663aa755",
+      "github_repo": "Repository no longer available",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "databricks-job-operator",
+      "version_identifier": "22d22bde30",
+      "github_repo": "Repository no longer available",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "skill-forge",
+      "version_identifier": "5b6597a442",
+      "github_repo": "Adit-Jain-srm/skill-forge",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "proxysss-install",
+      "version_identifier": "2606da3876",
+      "github_repo": "neko233-com/proxysss",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "install-service",
+      "version_identifier": "f0678971c7",
+      "github_repo": "Repository no longer available",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "installing-brand-design-skills",
+      "version_identifier": "d021309693",
+      "github_repo": "Repository no longer available",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "install-openclaw-to-digitalocean",
+      "version_identifier": "9ca1d4edf7",
+      "github_repo": "CodeAlive-AI/ceo-ai-os",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "create-singbox-vpn",
+      "version_identifier": "82e713328b",
+      "github_repo": "Repository no longer available",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "clawseat-install",
+      "version_identifier": "e3660803e3",
+      "github_repo": "Repository no longer available",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "skill-builder",
+      "version_identifier": "e562b52c83",
+      "github_repo": "odysseyalive/claude-enforcer",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "tophant-clawvault-installer",
+      "version_identifier": "0.2.13 / a3d265e51a",
+      "github_repo": "tophant-ai/ClawVault",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "userscript-saas",
+      "version_identifier": "dd5471c802",
+      "github_repo": "Repository no longer available",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "write-my-blog",
+      "version_identifier": "0.1.0 / 6e1c75f59b",
+      "github_repo": "openclaw/skills",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "file-oon-claim",
+      "version_identifier": "dbf8f5ae0d",
+      "github_repo": "Repository no longer available",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    },
+    {
+      "skill_name": "install-claw-compactor",
+      "version_identifier": "58558ffa36",
+      "github_repo": "Repository no longer available",
+      "reviewed_verdict": "MALICIOUS",
+      "confidence": "HIGH"
+    }
+  ]
+}
