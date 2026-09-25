@@ -8,9 +8,12 @@ reads the evidence the machine confirmed and returns a verdict.
 
 Reproducibility materials are indexed in [`artifact/README.md`](artifact/README.md).
 They include the benchmark, raw evaluation outputs, marketplace findings, and
-the independent harm-based audit of 38 candidate Skills. The 38-Skill audit is
-available both as [browsable reports](artifact/skill-audit-38-v1.0.0/README.md)
-and as a [ZIP archive](artifact/malskilldet-skill-audit-38-v1.0.0.zip).
+34 individual harm-based reports for Skills classified as malicious. The
+malicious-Skill audit is available both as
+[browsable reports](artifact/malicious-skill-audit-34-v1.0.0/README.md) and as a
+[ZIP archive](artifact/malskilldet-malicious-skill-audit-34-v1.0.0.zip). The
+complete 100-benign/100-malicious benchmark is stored in
+[`dataset-100x100-v1.0.0.zip`](artifact/dataset-100x100-v1.0.0.zip).
 
 **The dynamic step runs to completion first, and only then does the final one
 judge.** That is the only order we recommend, and it is not a preference: the

@@ -8,8 +8,8 @@ Everything the paper reports, beyond the implementation in the repository root.
 | `dataset-100x100-v1.0.0.zip` | The 200 skill directories themselves, 100 benign and 100 malicious. |
 | `qwen3max-main-run.zip` | Every raw output of the main Qwen3-max configuration. |
 | `marketplace-findings.csv` | The skills the marketplace audit confirmed, one row each. |
-| `skill-audit-38-v1.0.0/` | The index, structured results, and 38 individual English reports from the independent harm-based audit. |
-| `malskilldet-skill-audit-38-v1.0.0.zip` | A packaged copy of the complete 38-Skill audit. |
+| `malicious-skill-audit-34-v1.0.0/` | The index, structured results, and 34 individual English reports for Skills classified as malicious. |
+| `malskilldet-malicious-skill-audit-34-v1.0.0.zip` | A packaged copy of the 34 malicious-Skill reports. |
 | `BASELINES.md` | Source, pinned state, and verdict criterion for each of the nine baselines. |
 
 ## `labels.csv`
@@ -44,6 +44,10 @@ keeps skills that direct the agent into risky but legitimate operations.
 **These skills are live.** Several fetch and execute remote payloads when an agent
 follows them. Unpack and run them only inside a disposable container.
 
+This repository copy is byte-identical to the `dataset-v1.0.0` Release asset.
+It is 15,696,136 bytes and has SHA-256 digest
+`77522701c8dd92fc6f6fe205e7478100ebd84bc38652218d4fe8abbf2db3f107`.
+
 ## `qwen3max-main-run.zip`
 
 The configuration behind Tables 2, 4, 5 and 7: Qwen3-max, 3 rounds, recursion
@@ -69,18 +73,17 @@ The credentials that appear in them are the sandbox canaries, planted on realist
 paths under `/workspace/project/secrets/` and accepted by no service, together
 with placeholder strings that the audited skills ship themselves.
 
-## 38-Skill harm-based audit
+## 34 malicious-Skill harm-based reports
 
 The independent audit evaluates whether ordinary installation, runtime behavior,
 or an explicit use path can damage the user's host, accounts, or data. It does
-not infer maliciousness from the author's subjective intent. The final result is
-34 `MALICIOUS`, 4 `BENIGN`, and 0 `UNKNOWN`; the four benign Skills are
-`uni-course-scheduler`, `new-mac-setup`, `codymaster`, and `web-use`.
+not infer maliciousness from the author's subjective intent. This artifact
+contains only the 34 Skills classified as `MALICIOUS`.
 
-The [report index](skill-audit-38-v1.0.0/README.md) links to 38 individually
+The [report index](malicious-skill-audit-34-v1.0.0/README.md) links to 34 individually
 written English reports. Machine-readable results are provided as CSV and JSON
 in the same directory. The ZIP contains reports only and does not include the
 original live or potentially harmful Skill samples.
 
-The packaged archive is 109,334 bytes. Its SHA-256 digest is
-`8710698fbe68bc786cb6ca66a61599da9ea69b17ebedad2db4b585434d0a59db`.
+The packaged archive is 98,916 bytes. Its SHA-256 digest is
+`990dbe1979fdc942f4cbb99b85fcde6dd1334e74f04544f7216ed9126ada3931`.

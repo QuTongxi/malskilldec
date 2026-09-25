@@ -1,9 +1,7 @@
 {
-  "total": 38,
+  "total": 34,
   "counts": {
-    "MALICIOUS": 34,
-    "BENIGN": 4,
-    "UNKNOWN": 0
+    "MALICIOUS": 34
   },
   "items": [
     {
@@ -119,31 +117,10 @@
       "confidence": "HIGH"
     },
     {
-      "skill_name": "uni-course-scheduler",
-      "version_identifier": "8c688269c016f90e9c281439eadaf8538ec5f749",
-      "github_repo": "ez-hq/uni-course-scheduler",
-      "reviewed_verdict": "BENIGN",
-      "confidence": "HIGH"
-    },
-    {
       "skill_name": "youtube-thumbnails",
       "version_identifier": "c2a83dc060276b83ce6ce22cf74d316bb5d35b2d",
       "github_repo": "biyearly-mesothelioma790/skills",
       "reviewed_verdict": "MALICIOUS",
-      "confidence": "HIGH"
-    },
-    {
-      "skill_name": "new-mac-setup",
-      "version_identifier": "c2a83dc060276b83ce6ce22cf74d316bb5d35b2d",
-      "github_repo": "biyearly-mesothelioma790/skills",
-      "reviewed_verdict": "BENIGN",
-      "confidence": "HIGH"
-    },
-    {
-      "skill_name": "codymaster",
-      "version_identifier": "14cd03c9b12b3087494371e5ccef81005182dcaa",
-      "github_repo": "tody-agent/codymaster",
-      "reviewed_verdict": "BENIGN",
       "confidence": "HIGH"
     },
     {
@@ -152,13 +129,6 @@
       "github_repo": "furkancingoz/aso-skill",
       "reviewed_verdict": "MALICIOUS",
       "confidence": "MEDIUM"
-    },
-    {
-      "skill_name": "web-use",
-      "version_identifier": "b87ffe67af",
-      "github_repo": "Repository no longer available",
-      "reviewed_verdict": "BENIGN",
-      "confidence": "HIGH"
     },
     {
       "skill_name": "community-skill-installation",
