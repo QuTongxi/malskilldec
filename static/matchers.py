@@ -18,6 +18,26 @@ LEVEL_SCORE = {"low": 5, "medium": 12, "high": 25, "critical": 40}
 # Bonus added when two behaviour groups co-occur (see SYNERGIES).
 BONUS_SCORE = {"low": 8, "high": 20}
 
+# The simplified model: one point per severity step, and no cross-group bonus
+# at all, so a claim's score is exactly the sum of its groups' worst findings.
+SIMPLE_LEVEL_SCORE = {"low": 1, "medium": 2, "high": 3, "critical": 4}
+
+DEFAULT_LEVEL_SCORE = dict(LEVEL_SCORE)
+# DEFAULT_SYNERGIES is snapshotted just below the SYNERGIES table itself.
+
+
+def set_scoring(simplified=False):
+    """Select the scoring model, in place.
+
+    `score_claim` reads LEVEL_SCORE and SYNERGIES off the module, so emptying
+    the synergy table here is what removes the bonus term from the score.
+    Both directions are supported, so a process that scans twice under
+    different settings gets what it asked for each time.
+    """
+    LEVEL_SCORE.clear()
+    LEVEL_SCORE.update(SIMPLE_LEVEL_SCORE if simplified else DEFAULT_LEVEL_SCORE)
+    SYNERGIES[:] = [] if simplified else DEFAULT_SYNERGIES
+
 
 # --------------------------------------------------------------------------
 # Behaviour groups -> the 8 malicious types (report.pdf, money access dropped)
@@ -122,6 +142,9 @@ SYNERGIES = [
     ("third_party_content", "network_send", "third_party_content_exposure", "low"),
     ("third_party_content", "network_fetch", "third_party_content_exposure", "low"),
 ]
+
+# Pristine copy, so set_scoring() can put the table back after clearing it.
+DEFAULT_SYNERGIES = list(SYNERGIES)
 
 
 # --------------------------------------------------------------------------

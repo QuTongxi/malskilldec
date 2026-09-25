@@ -1,12 +1,18 @@
 """The one place a chat model is built.  Credentials come from .env."""
 
 import os
+import sys
 from pathlib import Path
 
 import dotenv
 from langchain_openai import ChatOpenAI
 
-dotenv.load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+import efficiency
+
+dotenv.load_dotenv(ROOT / ".env")
 
 
 def chat_model(temperature, timeout, seed=None, top_p=None):
@@ -25,4 +31,5 @@ def chat_model(temperature, timeout, seed=None, top_p=None):
         timeout=timeout,
         seed=seed,
         top_p=top_p,
+        callbacks=[efficiency.UsageCallback()],
     )

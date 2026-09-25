@@ -25,7 +25,7 @@ class Tester:
         self.container = container
         self.round = 0
 
-    def run(self, timeout, recursive, prompt):
+    def run(self, timeout, recursive, prompt, temperature=0.0):
         self.round += 1
         cid = self.container.id
 
@@ -45,7 +45,8 @@ class Tester:
         agent = subprocess.run(
             ["docker", "exec", *env_flags(), cid, "python", "/opt/tester/run_test.py",
              "--prompt-file", PROMPT_FILE, "--timeout", str(timeout),
-             "--recursive", str(recursive), "--out", RESULT_FILE],
+             "--recursive", str(recursive), "--temperature", str(temperature),
+             "--out", RESULT_FILE],
             capture_output=True, text=True, timeout=timeout * recursive + 300)
 
         after = filesystem.snapshot(cid)
@@ -63,6 +64,8 @@ class Tester:
             "execution": result["execution"],
             "llm_output": result["llm_output"],
             "network": network.parse(captured, provider),
+            "llm_metrics": result.get("llm_metrics", []),
             "metadata": {"skill": self.container.skill, "container": self.container.name,
-                         "round": self.round, "timeout": timeout, "recursive": recursive},
+                         "round": self.round, "timeout": timeout, "recursive": recursive,
+                         "temperature": temperature},
         }

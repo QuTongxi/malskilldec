@@ -25,8 +25,24 @@ dynamic/<skill>.json     step 2: every round of every claim, with the review
 dynamic/summary.json     step 2: one line per skill
 court/<skill>.md         step 3: forensics, indictment and judgement, to read
 court/court.json         step 3: one court result per skill tried
-verdicts.json            one verdict per skill in the folder
+    verdicts.json            one verdict per skill in the folder
+    _metrics/events.jsonl    every timed span and actual provider request
+    _metrics/summary.json    stage wall clock, P50/P95 latency, tokens and cost
 ```
+
+## Efficiency metrics
+
+`main.py` records metrics automatically.  The JSONL file is the source of
+truth: each provider request is kept separately so tiered pricing can be
+recomputed without rerunning the experiment.  It stores token counts, timing,
+stage/skill/claim/round coordinates and errors, but never prompts, responses,
+API URLs or credentials.  The summary distinguishes corpus wall clock from
+overlapping per-skill latency and reports dynamic pruning/round counts and
+court early exits.
+
+For the Qwen3-max Beijing list price published on 2026-07-24, pass
+`--pricing-profile qwen3-max-cn-beijing-2026-07-24`.  The profile is an estimate;
+the provider bill remains the authoritative charged amount.
 
 ## The three steps on their own
 

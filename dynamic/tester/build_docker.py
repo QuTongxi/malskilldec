@@ -19,6 +19,7 @@ dotenv.load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 BUILD = Path(__file__).resolve().parent / "build"
 RUN_TEST = Path(__file__).resolve().parent / "run_test.py"
+EFFICIENCY = Path(__file__).resolve().parents[2] / "efficiency.py"
 IMAGE = "malskilldet-dynamic:v1"
 ENV_KEYS = ("openai_model", "openai_api_url", "openai_api_key")
 
@@ -88,6 +89,7 @@ class Container:
             self.skill = stage(skill_path, staging)
             docker("cp", "%s/." % staging, "%s:/workspace/skills/" % self.id)
         docker("cp", str(RUN_TEST), "%s:/opt/tester/run_test.py" % self.id)
+        docker("cp", str(EFFICIENCY), "%s:/opt/tester/efficiency.py" % self.id)
 
     def close(self):
         docker("rm", "-f", self.id, check=False)

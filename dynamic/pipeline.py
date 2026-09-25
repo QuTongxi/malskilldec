@@ -19,6 +19,7 @@ container is destroyed with it.
 """
 
 import argparse
+import collections
 import json
 import os
 import sys
@@ -27,8 +28,11 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import efficiency
 from generator import generator, helper, prepare
 from reviewer import reviewer
 from tester import build_docker
@@ -75,19 +79,36 @@ def anchors(claim):
 def run_claim(claim, skill_md, tester, args):
     """generate -> test -> review, until confirmed or out of rounds."""
     rounds, prior = [], None
+    skill_name = claim["metadata"]["skill"]
+    claim_type = claim["type"]
     for index in range(1, args.round + 1):
-        artefacts = generator.generate(claim, skill_md, prior,
-                                       args.loop_timeout, args.loop_recursive)
-        log("    round %d  prompt: %s" % (index, artefacts["prompt"][:110].replace("\n", " ")))
+        with efficiency.span("dynamic", "round", skill=skill_name,
+                             claim=claim_type, round=index):
+            with efficiency.span("dynamic", "generator", skill=skill_name,
+                                 claim=claim_type, round=index):
+                artefacts = generator.generate(
+                    claim, skill_md, prior, args.loop_timeout, args.loop_recursive)
+            log("    round %d  prompt: %s"
+                % (index, artefacts["prompt"][:110].replace("\n", " ")))
 
-        evidence = tester.run(args.tester_timeout, args.tester_recursive, artefacts["prompt"])
-        log("    round %d  %d tool calls, %d fs changes, %d network entries"
-            % (index, len(evidence["execution"]), len(evidence["filesystem"]),
-               len(evidence["network"])))
+            with efficiency.span("dynamic", "tester", skill=skill_name,
+                                 claim=claim_type, round=index):
+                evidence = tester.run(
+                    args.tester_timeout, args.tester_recursive, artefacts["prompt"],
+                    args.tester_temperature)
+            efficiency.import_events(
+                evidence.get("llm_metrics"), skill=skill_name,
+                claim=claim_type, round=index)
+            log("    round %d  %d tool calls, %d fs changes, %d network entries"
+                % (index, len(evidence["execution"]), len(evidence["filesystem"]),
+                   len(evidence["network"])))
 
-        verdict = reviewer.review(artefacts["prompt"], artefacts["oracle"], evidence,
-                                  skill_md, args.loop_timeout, args.loop_recursive)
-        log("    round %d  reviewer: %s" % (index, verdict["verdict"]))
+            with efficiency.span("dynamic", "reviewer", skill=skill_name,
+                                 claim=claim_type, round=index):
+                verdict = reviewer.review(
+                    artefacts["prompt"], artefacts["oracle"], evidence,
+                    skill_md, args.loop_timeout, args.loop_recursive)
+            log("    round %d  reviewer: %s" % (index, verdict["verdict"]))
 
         rounds.append({"round": index, "generator": artefacts,
                        "tester": evidence, "reviewer": verdict})
@@ -112,6 +133,11 @@ def apply_prune(skill, args):
     )
     after_claims = len(pruned["claims"])
     after_findings = sum(len(c["findings"]) for c in pruned["claims"])
+    efficiency.record(
+        "workload", stage="dynamic", phase="prune", skill=skill["skill"],
+        claims_before=before_claims, claims_after=after_claims,
+        findings_before=before_findings, findings_after=after_findings,
+    )
     if (after_claims, after_findings) != (before_claims, before_findings):
         log("%s: pruned claims %d→%d, findings %d→%d"
             % (skill["skill"], before_claims, after_claims, before_findings, after_findings))
@@ -126,7 +152,13 @@ def run_skill(skill, args):
         return {"skill": skill["skill"], "path": skill["path"],
                 "dropped_findings": [], "claims": [], "verdict": "BENIGN"}
 
-    skill = prepare.denoise(skill, args.loop_timeout, args.loop_recursive)
+    with efficiency.span("dynamic", "denoise", skill=skill["skill"]):
+        skill = prepare.denoise(skill, args.loop_timeout, args.loop_recursive)
+    efficiency.record(
+        "workload", stage="dynamic", phase="denoise", skill=skill["skill"],
+        findings_after=skill["n_findings"], findings_dropped=skill["n_dropped"],
+        claims_after=len(skill["claims"]),
+    )
     log("%s: %d claims after denoising (%d findings dropped)"
         % (skill["skill"], len(skill["claims"]), skill["n_dropped"]))
     # Denoise rebuilds claims from surviving findings, so a finding that maps to
@@ -166,7 +198,7 @@ def run_skill(skill, args):
     return result
 
 
-def run_all(skills, args, out):
+def _run_all(skills, args, out):
     """Test every accused skill, one result file each, and return the results.
 
     `args` carries the budgets: round, tester_timeout, tester_recursive,
@@ -213,7 +245,8 @@ def run_all(skills, args, out):
 
     def worker(skill):
         try:
-            result = run_skill(skill, args)
+            with efficiency.span("dynamic", "skill", skill=skill["skill"]):
+                result = run_skill(skill, args)
         except Exception:
             log("%s: FAILED\n%s" % (skill["skill"], traceback.format_exc()))
             result = {"skill": skill["skill"], "path": skill["path"],
@@ -244,6 +277,54 @@ def run_all(skills, args, out):
     return results
 
 
+def run_all(skills, args, out):
+    """Run and measure the complete dynamic corpus at the configured concurrency."""
+    efficiency.record(
+        "workload", stage="dynamic", phase="input", skills=len(skills),
+        static_claims=sum(len(skill.get("claims", [])) for skill in skills),
+        max_parallel=args.max_parallel, max_rounds=args.round,
+        tester_temperature=args.tester_temperature,
+        max_claims=getattr(args, "max_claims", None),
+        max_findings_per_group=getattr(args, "max_findings_per_group", None),
+        finding_context_chars=getattr(args, "finding_context_chars", None),
+    )
+    with efficiency.span("dynamic", "dynamic_corpus", skills=len(skills),
+                         max_parallel=args.max_parallel):
+        results = _run_all(skills, args, out)
+    confirmations_by_round = collections.Counter()
+    first_skill_confirmation = collections.Counter()
+    for result in results:
+        confirmed_rounds = []
+        for claim in result.get("claims", []):
+            for round_result in claim.get("rounds", []):
+                if round_result.get("reviewer", {}).get("verdict") == "confirmed":
+                    round_number = int(round_result.get("round", 0))
+                    confirmations_by_round[round_number] += 1
+                    confirmed_rounds.append(round_number)
+        if confirmed_rounds:
+            first_skill_confirmation[min(confirmed_rounds)] += 1
+    efficiency.record(
+        "workload", stage="dynamic", phase="output", skills=len(results),
+        errors=sum(result.get("verdict") == "error" for result in results),
+        claims=sum(len(result.get("claims", [])) for result in results),
+        rounds=sum(len(claim.get("rounds", []))
+                   for result in results for claim in result.get("claims", [])),
+        confirmed_claims=sum(
+            bool(claim.get("rounds"))
+            and claim["rounds"][-1].get("reviewer", {}).get("verdict") == "confirmed"
+            for result in results for claim in result.get("claims", [])),
+        skills_with_confirmation=sum(
+            any(bool(claim.get("rounds"))
+                and claim["rounds"][-1].get("reviewer", {}).get("verdict") == "confirmed"
+                for claim in result.get("claims", []))
+            for result in results),
+        confirmations_by_round={str(k): v for k, v in sorted(confirmations_by_round.items())},
+        skills_first_confirmed_by_round={
+            str(k): v for k, v in sorted(first_skill_confirmation.items())},
+    )
+    return results
+
+
 def add_prune_args(parser):
     """Optional claim/finding shrink knobs; omit them to keep the static report as-is."""
     prune = parser.add_argument_group("prune (optional; unset = original behaviour)")
@@ -269,6 +350,7 @@ def main():
     parser.add_argument("--round", type=int, default=3, help="generate/test/review rounds per claim")
     parser.add_argument("--tester-timeout", type=int, default=20)
     parser.add_argument("--tester-recursive", type=int, default=20)
+    parser.add_argument("--tester-temperature", type=float, default=0.0)
     parser.add_argument("--loop-timeout", type=int, default=20)
     parser.add_argument("--loop-recursive", type=int, default=50)
     parser.add_argument("--max-parallel", type=int, default=8, help="skills tested at once")

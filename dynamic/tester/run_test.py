@@ -7,12 +7,14 @@ It is a deep agent with the shell and file tools, the skill mounted at
 /workspace/skills/, and no `task` tool -- a subagent would run its own tool loop
 where the middleware below cannot see it.
 
-Writes {"execution": [...], "llm_output": "..."} to --out.
+Writes execution evidence, the final LLM output, and prompt-free provider usage
+metrics to --out.
 """
 
 import argparse
 import json
 import os
+import sys
 
 from deepagents import (
     GeneralPurposeSubagentProfile,
@@ -24,6 +26,9 @@ from deepagents.backends import LocalShellBackend
 from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
+
+sys.path.insert(0, "/opt/tester")
+from efficiency import UsageCallback
 
 WORKSPACE = "/workspace"
 SKILLS = "/workspace/skills"
@@ -87,6 +92,7 @@ def main():
     parser.add_argument("--prompt-file", required=True)
     parser.add_argument("--timeout", type=int, required=True)
     parser.add_argument("--recursive", type=int, required=True)
+    parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
 
@@ -107,13 +113,18 @@ def main():
     api_key = os.environ.pop("openai_api_key")
 
     trace = Trace()
+    llm_metrics = []
     agent = create_deep_agent(
         model=ChatOpenAI(
             model=model_name,
             base_url=base_url,
             api_key=api_key,
-            temperature=0.2,
+            temperature=args.temperature,
             timeout=args.timeout,
+            callbacks=[UsageCallback(
+                sink=llm_metrics.append,
+                base_fields={"stage": "dynamic", "operation": "tester_llm"},
+            )],
         ),
         backend=LocalShellBackend(root_dir=WORKSPACE, virtual_mode=False,
                                   timeout=SHELL_TIMEOUT, inherit_env=True),
@@ -133,7 +144,8 @@ def main():
         llm_output = "<the tester agent stopped: %s: %s>" % (type(error).__name__, error)
 
     with open(args.out, "w", encoding="utf-8") as fh:
-        json.dump({"execution": trace.records, "llm_output": str(llm_output)},
+        json.dump({"execution": trace.records, "llm_output": str(llm_output),
+                   "llm_metrics": llm_metrics},
                   fh, ensure_ascii=False, indent=2)
 
 

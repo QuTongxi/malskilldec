@@ -22,8 +22,9 @@ export PATH="$HERE/node/bin:$PATH"
 mkdir -p "$OUT_DIR" "$DB_DIR"
 
 analyse() {
-  local lang="$1" name="$2" find_expr="$3"
-  if [ -z "$(find "$SOURCE_ROOT" \( -name node_modules -o -name .git \) -prune -o -type f $find_expr -print -quit)" ]; then
+  local lang="$1" name="$2"
+  shift 2
+  if [ -z "$(find "$SOURCE_ROOT" \( -name node_modules -o -name .git \) -prune -o -type f \( "$@" \) -print -quit)" ]; then
     echo "codeql: no $name sources, skipping"
     return
   fi
@@ -42,6 +43,6 @@ analyse() {
     || { tail -30 "$log" >&2; exit 1; }
 }
 
-analyse python python '-name *.py'
+analyse python python -name '*.py'
 analyse javascript-typescript javascript \
-  '( -name *.js -o -name *.mjs -o -name *.cjs -o -name *.jsx -o -name *.ts -o -name *.tsx )'
+  -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx'

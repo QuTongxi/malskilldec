@@ -6,9 +6,24 @@ eval_runs/
 validation_shortlist_221/
 .env
 
+# 本地 agent 配置，不纳入版本控制
+.claude/
+.agent/
+
+# 本地实验运行产物
+run_v8/
+*.log
+
+# 第三方对照系统，单独目录、不纳入本仓库追踪
+third_party/
+
 # marketplace 的数据与产出：8k 个 skill 的快照、扫描结果、索引，共 1.4G
 marketplace/real_dataset_8k/
 marketplace/scan/
 marketplace/.cache/
 marketplace/frame.json
 marketplace/manifest.json
+
+# 本地生成的图表与实验诊断记录
+marketplace/figs/
+references/FAILURE-v7.md

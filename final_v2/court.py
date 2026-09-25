@@ -25,8 +25,11 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import efficiency
 import forensics
 import judge
 import prosecutor
@@ -204,16 +207,24 @@ def run_court(units, timeout=300, recursive=50):
               "verdict": "BENIGN", "judge_verdict": None, "reason": "",
               "forensics": None, "indictment": None, "judgement": None}
 
-    result["forensics"] = forensics.investigate(
-        head.get("skill") or Path(head["path"]).name,
-        render_evidence(units), head["path"], timeout, recursive)
+    skill_name = head.get("skill") or Path(head["path"]).name
+    with efficiency.span("court", "forensics", skill=skill_name,
+                         confirmed_claims=len(units)):
+        result["forensics"] = forensics.investigate(
+            skill_name, render_evidence(units), head["path"], timeout, recursive)
 
-    result["indictment"] = prosecutor.accuse(result["forensics"], timeout, recursive)
+    with efficiency.span("court", "prosecutor", skill=skill_name,
+                         confirmed_claims=len(units)):
+        result["indictment"] = prosecutor.accuse(
+            result["forensics"], timeout, recursive)
     if result["indictment"]["verdict"] == "BENIGN":
         result["reason"] = "the prosecutor brought no charge"
         return result
 
-    result["judgement"] = judge.adjudicate(result["indictment"]["report"], timeout, recursive)
+    with efficiency.span("court", "judge", skill=skill_name,
+                         confirmed_claims=len(units)):
+        result["judgement"] = judge.adjudicate(
+            result["indictment"]["report"], timeout, recursive)
     result["judge_verdict"] = result["judgement"]["verdict"]
     result["verdict"] = result["judge_verdict"]
     result["reason"] = "the judge returned %s" % result["judge_verdict"]
@@ -311,7 +322,7 @@ def load_evidence(path):
     return list(grouped.values())
 
 
-def try_skills(groups, out, timeout=300, recursive=50, max_parallel=10):
+def _try_skills(groups, out, timeout=300, recursive=50, max_parallel=10):
     """Try every group of confirmed claims, write the reports, return the results.
 
     `main.py` runs this as its third step, so the one-command path and
@@ -323,7 +334,9 @@ def try_skills(groups, out, timeout=300, recursive=50, max_parallel=10):
     def try_one(units):
         head = units[0]
         try:
-            result = run_court(units, timeout, recursive)
+            with efficiency.span("court", "skill", skill=head.get("skill"),
+                                 confirmed_claims=len(units)):
+                result = run_court(units, timeout, recursive)
         except Exception as error:                       # one skill, not the run
             result = {"skill": head.get("skill"), "path": head.get("path"),
                       "claim": None, "verdict": "error", "judge_verdict": None,
@@ -344,6 +357,27 @@ def try_skills(groups, out, timeout=300, recursive=50, max_parallel=10):
           % (sum(r["verdict"] == "MALICIOUS" for r in results),
              sum(r["verdict"] == "BENIGN" for r in results),
              sum(r["verdict"] == "error" for r in results), out))
+    return results
+
+
+def try_skills(groups, out, timeout=300, recursive=50, max_parallel=10):
+    """Run and measure the complete court corpus."""
+    efficiency.record(
+        "workload", stage="court", phase="input", skills=len(groups),
+        confirmed_claims=sum(len(group) for group in groups),
+        max_parallel=max_parallel,
+    )
+    with efficiency.span("court", "court_corpus", skills=len(groups),
+                         max_parallel=max_parallel):
+        results = _try_skills(groups, out, timeout, recursive, max_parallel)
+    efficiency.record(
+        "workload", stage="court", phase="output", skills=len(results),
+        errors=sum(result.get("verdict") == "error" for result in results),
+        prosecutor_early_exits=sum(
+            result.get("reason") == "the prosecutor brought no charge"
+            for result in results),
+        judge_reached=sum(result.get("judgement") is not None for result in results),
+    )
     return results
 
 

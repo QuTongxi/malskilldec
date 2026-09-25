@@ -30,10 +30,15 @@ Everything lands under `--out`:
     court/<skill>.md     step 3: forensics, indictment and judgement, to read
     court/court.json     step 3: one court result per skill tried
     verdicts.json        the answer: one verdict per skill in the folder
+    _metrics/events.jsonl  timed spans and per-request token usage
+    _metrics/summary.json  stage wall clock, latency distributions and cost
 """
 
 import argparse
 import json
+import os
+import platform
+import subprocess
 import sys
 from pathlib import Path
 
@@ -42,6 +47,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "final_v2"))
 
 import court
+import efficiency
 from dynamic import pipeline as dynamic_pipeline
 from static import pipeline as static_pipeline
 
@@ -70,6 +76,8 @@ def parse_args(argv=None):
     dynamic_group.add_argument("--tester-recursive", type=int, default=60,
                                help="tool-loop budget of the agent in the container "
                                     "(graph steps; a tool call costs two)")
+    dynamic_group.add_argument("--tester-temperature", type=float, default=0.0,
+                               help="sampling temperature of the container agent (default 0)")
     dynamic_group.add_argument("--loop-timeout", type=int, default=20,
                                help="seconds per model call of generator and reviewer")
     dynamic_group.add_argument("--loop-recursive", type=int, default=50,
@@ -87,6 +95,23 @@ def parse_args(argv=None):
                              help="seconds per model call of the court (default 300)")
     final_group.add_argument("--court-recursive", type=int, default=50,
                              help="tool-loop budget per court stage")
+
+    metrics_group = parser.add_argument_group("efficiency metrics")
+    metrics_group.add_argument(
+        "--metrics-dir",
+        help="JSONL events and derived summary (default: <out>/_metrics)")
+    metrics_group.add_argument(
+        "--starting-balance-usd", type=float,
+        help="provider balance immediately before the run, for later bill reconciliation")
+    metrics_group.add_argument(
+        "--pricing-profile", choices=sorted(efficiency.PRICING_PROFILES),
+        help="request-tiered API list-price profile used for estimated cost")
+    metrics_group.add_argument("--input-price-per-million", type=float,
+                               help="USD per million uncached input tokens")
+    metrics_group.add_argument("--output-price-per-million", type=float,
+                               help="USD per million output tokens")
+    metrics_group.add_argument("--cached-input-price-per-million", type=float,
+                               help="USD per million cached input tokens; defaults to input price")
 
     return parser.parse_args(argv)
 
@@ -143,11 +168,8 @@ def collect_verdicts(report, results, judged):
     return verdicts
 
 
-def main():
-    args = parse_args()
-    out = Path(args.out)
-    out.mkdir(parents=True, exist_ok=True)
-
+def run_pipeline(args, out):
+    """Run the three stages.  Metrics are configured by ``main``."""
     print("=" * 70, "\nstep 1/3  static\n", sep="")
     try:
         report = static_pipeline.scan(args.folder, not args.disable_codeql)
@@ -188,6 +210,57 @@ def main():
           % (sum(v["verdict"] == "MALICIOUS" for v in verdicts),
              sum(v["verdict"] == "BENIGN" for v in verdicts),
              sum(v["verdict"] == "error" for v in verdicts), out))
+
+
+def runtime_metadata(args):
+    """Reproducibility metadata; deliberately excludes credentials and API URLs."""
+    try:
+        revision = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT,
+            capture_output=True, text=True, check=True).stdout.strip()
+        dirty = bool(subprocess.run(
+            ["git", "status", "--porcelain"], cwd=ROOT,
+            capture_output=True, text=True, check=True).stdout.strip())
+    except Exception:
+        revision, dirty = None, None
+    return {
+        "command": sys.argv,
+        "git_revision": revision,
+        "git_dirty": dirty,
+        "model": os.environ.get("openai_model"),
+        "platform": platform.platform(),
+        "processor": platform.processor(),
+        "logical_cpus": os.cpu_count(),
+        "fixed_model_sampling": {
+            "generator_temperature": 0.2,
+            "reviewer_temperature": 0.0,
+            "court_temperature": 0.0,
+            "court_top_p": 0.01,
+        },
+        "config": vars(args),
+    }
+
+
+def main():
+    args = parse_args()
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    metrics_dir = Path(args.metrics_dir) if args.metrics_dir else out / "_metrics"
+    efficiency.configure(
+        metrics_dir / "events.jsonl", metadata=runtime_metadata(args), reset=True)
+    try:
+        with efficiency.span("pipeline", "end_to_end", skills_root=str(Path(args.folder).resolve())):
+            run_pipeline(args, out)
+    finally:
+        summary = efficiency.finish(
+            metrics_dir / "summary.json",
+            args.input_price_per_million,
+            args.output_price_per_million,
+            args.cached_input_price_per_million,
+            args.pricing_profile,
+        )
+        if summary is not None:
+            print("efficiency metrics written to %s" % metrics_dir)
 
 
 if __name__ == "__main__":

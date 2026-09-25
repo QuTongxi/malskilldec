@@ -11,3 +11,8 @@ dependencies = [
     "python-dotenv",
     "pyyaml",
 ]
+
+[dependency-groups]
+dev = [
+    "matplotlib>=3.11.1",
+]
