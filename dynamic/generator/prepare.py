@@ -23,53 +23,43 @@ from llm import chat_model
 MAX_FINDINGS = 10
 
 SYSTEM_PROMPT = """\
-你的工作是从一次针对 AI agent skill 的正则扫描结果里，剔除那些误命中的条目。每个条目包含
-一处命中、这条规则所指的行为，以及命中处周围的源文本。
+Your task is to filter out false positives from the results of a regex scan targeting AI agent skills.
+Each entry includes a match, the behavior described by the rule, and surrounding source text around the match.
 
-对每个条目，你只判断一件事：这段源文本里是不是真的存在规则所描述的那个行为。凡是真实的
-构造、指令或可操作的示例，一律保留。它的用意是什么、安全不安全、严重到什么程度，都不在
-本次任务的范围内。
+For each entry, you judge only one thing: whether the source text genuinely contains the behavior described by the rule.
+Retain all real constructs, instructions, or executable examples. Do not consider intent, safety implications, or severity—these are outside the scope of this task.
 
-只有当命中的那些字眼并不表达该行为时，才把条目标记为噪声：
+Mark an entry as noise **only** when the matched text does **not** express the described behavior:
 
-- 只是某个文件、目录、变量、字段或标识符的名字长得像（`env/`、`venv/`、`download.py`、
-  `install_helper`、一个叫 `password` 的列）；
-- 只是正文、标题、更新日志或链接文字提到了某个工具或概念，并没有推荐、演示或实现它；
-- 源文本明确把这一行当作"不要这样做"的反例，或者它只是没有生命的测试数据、fixture、
-  被注释掉的代码，而不是一条指令；
-- 看上去的那个值其实只是占位符（`<YOUR_API_KEY>`、`sk-xxxxxxxx`、
-  `password = "changeme"`），而这条规则要成立必须有一个真实内嵌的值；
-- 这段文字属于许可证、lockfile 或随包携带的第三方依赖，描述的是那个第三方包而不是本
-  skill。
+- The matched string appears merely as part of a filename, directory name, variable, field, or identifier (e.g., `env/`, `venv/`, `download.py`, `install_helper`, a column named `password`);
+- The tool or concept is mentioned only in prose, headings, changelogs, or link text, without recommendation, demonstration, or implementation;
+- The source explicitly presents the line as a "do not do this" anti-example, or it is inert test data, fixture content, or commented-out code rather than an active instruction;
+- The apparent value is clearly a placeholder (e.g., `<YOUR_API_KEY>`, `sk-xxxxxxxx`, `password = "changeme"`), and the rule requires an actual embedded value to be valid;
+- The text belongs to a license file, lockfile, or third-party dependency bundled with the package, describing that third-party component rather than the skill itself.
 
-以下都要保留：作为 skill 工作流展示出来的命令、能跑起来的代码、安装与初始化步骤、写给
-agent 或用户的指令。哪怕它们看起来很平常、需要机器上并不存在的软件或凭据、在当前机器上
-多半会失败，也要保留。只要上下文给两种读法都留了余地，就保留。
+Retain the following: commands shown as part of the skill's workflow, runnable code snippets, installation and initialization steps, and instructions directed at the agent or user.
+Even if they appear mundane, require unavailable software or credentials, or would likely fail on the current machine, retain them. When context allows for multiple interpretations, retain the finding.
 
-收到多少个序号，就返回多少条结果。"""
+Return exactly as many results as there are input entries, preserving their order."""
 
 HUMAN_PROMPT = """\
-Skill：{skill}
+Skill: {skill}
 
 {items}
 
-看整段话的意思，不要只看命中的那个词。像 "silently ignores" 这类正常措辞、只出现在文件
-首字符的 BOM、构建产物或缓存里的碎片、程序启动时例行的日志清空与轮转，都是噪声——哪怕
-那个日志里存着上一次运行的内容。只有当上下文确实是在指使 agent 隐藏、注入或抹除某个动作
-以掩盖发生过什么时，这类命中才要保留。安装脚本里在正式干活之前的 `: > "$LOG_FILE"`，
-就是上面说的那种普通日志初始化，属于噪声。
+Interpret the full context—not just the matched keyword. Normal phrasing like "silently ignores", a BOM appearing only at the start of a file, fragments in build artifacts or caches, and routine log clearing/rotation during program startup are all noise—even if the log previously contained runtime data. Only retain such matches when the context explicitly instructs the agent to conceal, inject, or erase an action to hide evidence of its occurrence. For example, `: > "$LOG_FILE"` in an install script, used for ordinary log initialization before actual work begins, counts as noise.
 
-把这 {count} 个条目全部分类。"""
+Classify all {count} entries."""
 
 
 class Judgement(BaseModel):
-    index: int = Field(description="被判断的那个条目的序号")
-    noise: bool = Field(description="当这处命中并不表达规则所指的行为时为 true；下列情形必须为 true：'silently' 一类的普通语法、只在首字符出现的 BOM、构建产物、启动时例行的日志清空（哪怕旧记录被删掉了）；只有当上下文是在指使隐藏某个动作时，删日志才保留")
-    reason: str = Field(description="一句话说明")
+    index: int = Field(description="The index of the entry being judged")
+    noise: bool = Field(description="True if the match does not represent the behavior described by the rule; must be True for cases like ordinary uses of words such as 'silently', BOM markers at file start, build artifacts, or routine log clearing during startup (even if old logs are deleted); retain log-deletion findings only when context explicitly directs hiding an action")
+    reason: str = Field(description="A one-sentence explanation")
 
 
 class Judgements(BaseModel):
-    judgements: list[Judgement] = Field(description="每个条目一条结果，按给定顺序")
+    judgements: list[Judgement] = Field(description="One result per entry, in the given order")
 
 
 def render(findings):

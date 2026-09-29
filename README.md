@@ -4,6 +4,12 @@ Three steps. The static one accuses a skill of malicious types; the dynamic one
 executes the skill and tries to make the accusation show itself; the final one
 reads the evidence the machine confirmed and returns a verdict.
 
+## Language
+
+This README, every project-maintained README, and all runtime LLM prompts and
+charge guides are provided in English. Prompt files remain in their original
+locations so the pipeline loads the English text without configuration changes.
+
 ## Artifacts
 
 Reproducibility materials are indexed in [`artifact/README.md`](artifact/README.md).

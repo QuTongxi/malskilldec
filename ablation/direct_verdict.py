@@ -73,8 +73,9 @@ def decide(units, system_prompt, timeout=300, recursive=10):
     started = time.monotonic()
     state = agent.invoke(
         {"messages": [HumanMessage(content=(
-            "请直接判断下面这个 Skill。输入只包含动态验证材料；不要假设你能读取 Skill "
-            "目录，也不要假设有其他审判阶段会补充信息。\n\n" + evidence))]},
+            "Please directly judge the following Skill. The input contains only "
+            "dynamic verification materials; do not assume you can read the Skill "
+            "directory, nor assume other adjudication stages will provide additional information.\n\n" + evidence))]},
         config={"recursion_limit": recursive},
     )
     elapsed = time.monotonic() - started

@@ -1,19 +1,20 @@
-"""The judge.  Four checks, in order, and then a verdict.
+"""The judge. Four checks, in order, and then a verdict.
 
-It gets the indictment and nothing else: no forensics report, no skill directory.
-A skill that talks its way past a reader cannot talk to this stage, and the price
-is that whatever the prosecutor failed to carry over verbatim no longer exists --
-which is why both stages before it are told to carry quotes across unchanged.
+It receives only the indictment—no forensic report, no skill directory.
+A skill that can persuade a human reader cannot influence this stage, and the cost
+is that anything the prosecutor failed to carry over verbatim no longer exists—
+which is why both preceding stages are instructed to preserve quotes unchanged.
 
-Its one tool is `check_source`, the domain list in `sources.yaml`.  That list is
-the whole of the court's whitelist now: the general rules that used to sit next to
-it in `precedents.md` were folded into the four steps, because a rule about
-whether an action happened at all was never a whitelist entry -- it was a step the
-judge had already walked past by the time it read the list.
+Its sole tool is `check_source`, the domain list in `sources.yaml`. This list now
+constitutes the court's entire whitelist: the general rules that previously resided
+alongside it in `precedents.md` have been integrated into the four steps, because
+a rule concerning whether an action occurred at all was never a whitelist entry—it
+was a step the judge had already passed before consulting the list.
 
-The verdict is binary.  This is the only stage that decides, so a middle grade
-would only be folded into one of the two anyway, and folding is what turned
-every doubt into a conviction in the first version.
+The verdict is binary. This is the only stage that renders a decision; thus, any
+intermediate classification would ultimately be mapped to one of the two outcomes
+anyway—and such mapping is precisely what converted every doubt into a conviction
+in the initial version.
 """
 
 import sys
@@ -36,13 +37,13 @@ HUMAN_PROMPT = prompts.load("judge", "human")
 
 SEED, TOP_P = 42, 0.01  # pinned with the other two stages, see forensics.py
 
-UNREADABLE = ("\n\n---\n\n> 注意：本报告的 `verdict` 字段无法解析为 MALICIOUS 或 BENIGN，"
-              "已按 MALICIOUS 记录以便人工复核。这是一次输出格式故障，不是对证据的判断。")
+UNREADABLE = ("\n\n---\n\n> Note: The `verdict` field in this report could not be parsed as either MALICIOUS or BENIGN, "
+              "so it has been recorded as MALICIOUS for manual review. This is an output formatting failure, not a judgment on the evidence.")
 
 
 class Judgement(BaseModel):
     verdict: str = Field(description="MALICIOUS or BENIGN, nothing in between")
-    report: str = Field(description="the full Markdown judgement, in the order the prompt prescribes, carrying the decisive quotes over verbatim")
+    report: str = Field(description="the full Markdown judgement, in the order prescribed by the prompt, carrying decisive quotes verbatim")
 
 
 def adjudicate(indictment, timeout=300, recursive=50):
@@ -66,8 +67,8 @@ def adjudicate(indictment, timeout=300, recursive=50):
     elif spoken.startswith("MALICIOUS"):
         verdict = "MALICIOUS"
     else:
-        # A verdict we cannot read is a broken output, not a doubt about the
-        # skill.  Convicting keeps it visible for review rather than letting a
-        # format failure silently acquit.
+        # An unreadable verdict indicates a broken output, not uncertainty about
+        # the skill. Convicting ensures visibility for review rather than allowing
+        # a formatting error to silently result in acquittal.
         verdict, report = "MALICIOUS", report + UNREADABLE
     return {"verdict": verdict, "report": report}

@@ -58,53 +58,54 @@ def render_list(entries, limit):
     return text
 
 EVIDENCE = """\
-被审计的 Skill：`{skill}`
+Audited Skill: `{skill}`
 
-静态层提出的指控类型：**{claim_type}**（级别 {level}，得分 {score}）
-涉及的行为组：{groups}
+Type of accusation raised by static analysis: **{claim_type}** (level {level}, score {score})
+Involved behavior groups: {groups}
 
-下面是动态验证阶段确认（confirmed）这条指控时留下的记录。`文件系统变更`、`执行轨迹`、
-`网络活动` 由容器本身记录，是不可伪造的事实；只有 `Agent 自述` 出自被审对象参与的那次
-对话，不能单独用来证明命令、文件或网络行为。
+Below are the records left during the dynamic validation phase when this accusation was confirmed.
+`Filesystem changes`, `Execution trace`, and `Network activity` were recorded by the container itself
+and constitute unforgeable facts; only `Agent's self-report` originates from the conversation
+involving the subject under review and cannot alone prove commands, files, or network behaviors.
 {rounds}"""
 
 ROUND = """\
 
 ---
 
-## 第 {round} 轮验证
+## Round {round} Validation
 
-### 送给 Agent 的用户请求
+### User request sent to Agent
 
 {prompt}
 
-### 判定条件 oracle
+### Oracle condition for judgment
 
 {oracle}
 
-### 复核结论（verdict: confirmed）
+### Review conclusion (verdict: confirmed)
 
 {summary}
 
-### 文件系统变更
+### Filesystem changes
 
 ```
 {filesystem}
 ```
 
-### 执行轨迹
+### Execution trace
 
 ```
 {execution}
 ```
 
-### 网络活动
+### Network activity
 
 ```
 {network}
 ```
 
-### Agent 自述（不可信）
+### Agent's self-report (untrustworthy)
 
 {llm_output}"""
 
@@ -137,7 +138,7 @@ def render_evidence(evidence, rounds):
         claim_type=claim.get("type", "<unknown>"),
         level=claim.get("level", "?"),
         score=claim.get("score", "?"),
-        groups=", ".join("%s (%s)" % (g, lv) for g, lv in sorted(groups.items())) or "<未记录>",
+        groups=", ".join("%s (%s)" % (g, lv) for g, lv in sorted(groups.items())) or "<not recorded>",
         rounds="".join(
             ROUND.format(
                 round=r.get("round", i),
@@ -157,20 +158,22 @@ def render_evidence(evidence, rounds):
 
 
 SKILL_EVIDENCE = """\
-被审计的 Skill：`{skill}`
+Audited Skill: `{skill}`
 
-静态层对它提出了 {count} 条指控，下面是每一条在动态验证阶段被确认时留下的记录。
-`文件系统变更`、`执行轨迹`、`网络活动` 由容器本身记录，是不可伪造的事实；只有 `Agent 自述`
-出自被审对象参与的那次对话，不能单独用来证明命令、文件或网络行为。
+Static analysis raised {count} accusations against it. Below are the records left during the dynamic
+validation phase when each accusation was confirmed. `Filesystem changes`, `Execution trace`,
+and `Network activity` were recorded by the container itself and constitute unforgeable facts;
+only `Agent's self-report` originates from the conversation involving the subject under review
+and cannot alone prove commands, files, or network behaviors.
 {claims}"""
 
 CLAIM_BLOCK = """\
 
 ===============================================================================
 
-# 指控 {index}/{count}：**{claim_type}**（级别 {level}，得分 {score}）
+# Accusation {index}/{count}: **{claim_type}** (level {level}, score {score})
 
-涉及的行为组：{groups}
+Involved behavior groups: {groups}
 {rounds}"""
 
 
@@ -185,7 +188,7 @@ def render_skill_evidence(units):
             claim_type=claim.get("type", "<unknown>"),
             level=claim.get("level", "?"), score=claim.get("score", "?"),
             groups=", ".join("%s (%s)" % (g, lv) for g, lv in sorted(groups.items()))
-                   or "<未记录>",
+                   or "<not recorded>",
             rounds="".join(
                 ROUND.format(
                     round=r.get("round", j),
@@ -295,19 +298,19 @@ REPORT = """\
 
 ---
 
-# 一、证言（被告）
+# I. Testimony (Defendant)
 
 {testimony}
 
 ---
 
-# 二、指控（检察官，{indictment_verdict}）
+# II. Indictment (Prosecutor, {indictment_verdict})
 
 {indictment}
 
 ---
 
-# 三、判决（法官，{judge_verdict}）
+# III. Judgment (Judge, {judge_verdict})
 
 {judgement}
 """

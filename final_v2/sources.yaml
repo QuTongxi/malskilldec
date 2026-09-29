@@ -1,465 +1,467 @@
-# 来源名单：法官 `check_source(category, url)` 的后端。
+# Source allowlist: backend for judge `check_source(category, url)`.
 #
-# 一条 = 一个域名。`permissions` 列出该域名被允许的三类动作：
+# One entry = one domain. `permissions` lists the three types of actions allowed for that domain:
 #
-#     visit     取回内容供解析或阅读（网页、文档、只读 API 响应）
-#     download  取回一个会被执行或加载的东西（安装脚本、二进制、包、库、模型）
-#     upload    把本机或用户的数据送出去（POST body、上传文件、带凭据的写请求）
+#     visit     Retrieve content for parsing or reading (web pages, documents, read-only API responses)
+#     download  Retrieve something that will be executed or loaded (installation scripts, binaries, packages, libraries, models)
+#     upload    Send local or user data out (POST body, file uploads, write requests with credentials)
 #
-# 查询命中时，`note_passed`（动作在 permissions 里）或 `note_banned`（不在）会随结果一起
-# 回给法官。note 写这个域名**特有的事实**，不写通用规则——通用规则在 judge.md 里，重复一遍
-# 只会制造矛盾。
+# When a query matches, either `note_passed` (action is in permissions) or `note_banned` (not in permissions)
+# is returned alongside the result to the judge. The note should state **domain-specific facts**, not generic rules—
+# generic rules belong in judge.md; repeating them here only creates contradictions.
 #
-# 匹配从完整主机名开始，逐级往父域回退：`a.b.example.com` → `b.example.com` →
-# `example.com`。所以给 `vercel.app` 写一条，就覆盖了它下面所有子域；要让某个子域走不同的
-# 规则（`api.github.com` 与 `github.com`），单独给它写一条，越具体的先命中。
+# Matching starts from the full hostname and walks up toward parent domains:
+# `a.b.example.com` → `b.example.com` → `example.com`. Thus, an entry for `vercel.app`
+# covers all its subdomains; to assign different rules to a specific subdomain (e.g., `api.github.com` vs `github.com`),
+# add a separate, more specific entry—it will match first.
 #
-# 名单只回答**来源身份**这一件事。取回之后怎么执行、载荷是什么档、凭据该不该出现在 URL 里，
-# 都不在这里判——见 judge.md 第三步末尾那段边界说明。
+# This list addresses **source identity** only. How retrieved content is executed, what format the payload is in,
+# or whether credentials should appear in the URL are **not** judged here—see the boundary clarification
+# at the end of Step 3 in judge.md.
 
-DEFAULT: "不在白名单，需结合自身经验做最谨慎判断，对于本地网站一般允许所有操作，对于较为可信的常规仓库允许仅访问，对于非本地的裸 ip、尝试伪装或混淆的盗版网站（如 opena1.com）禁止一切行为并直接判断为 MALICIOUS"
+DEFAULT: "Not on allowlist; combine with your own experience to make the most cautious judgment. Generally allow all operations for localhost sites; allow 'visit' only for relatively trustworthy standard repositories; prohibit all actions and directly classify as MALICIOUS for non-local bare IPs or counterfeit sites attempting to impersonate or obfuscate (e.g., opena1.com)."
 
 
 # --------------------------------------------------------------------------
-# 本地与回环：不离开本机
+# Local & Loopback: does not leave the local machine
 # --------------------------------------------------------------------------
 
 localhost:
   permissions: [visit, download, upload]
-  note_passed: "允许，是否恶意应取决于具体行为"
+  note_passed: "Allowed; maliciousness depends on the specific behavior."
   note_banned: ""
 
 127.0.0.1:
   permissions: [visit, download, upload]
-  note_passed: "允许，是否恶意应取决于具体行为"
+  note_passed: "Allowed; maliciousness depends on the specific behavior."
   note_banned: ""
 
 0.0.0.0:
   permissions: [visit, download, upload]
-  note_passed: "本机监听地址，允许，是否恶意应取决于具体行为"
+  note_passed: "Local listening address; allowed; maliciousness depends on the specific behavior."
   note_banned: ""
 
 "::1":
   permissions: [visit, download, upload]
-  note_passed: "IPv6，允许，是否恶意应取决于具体行为"
+  note_passed: "IPv6 loopback; allowed; maliciousness depends on the specific behavior."
   note_banned: ""
 
 
 # --------------------------------------------------------------------------
-# 包注册表：第一方分发，内容按包名与版本固定
+# Package Registries: First-party distribution; content fixed by package name and version
 # --------------------------------------------------------------------------
 
 pypi.org:
   permissions: [visit, download]
-  note_passed: "Python 官方包索引，允许访问，具体是否恶意应取决于下载安装的python包是否为经验上高置信度认定为常用的包。"
-  note_banned: "向 PyPI 发布包是把代码推向公开索引，未经用户在本次请求里点名不得视为已授权。"
+  note_passed: "Official Python Package Index; access allowed. Maliciousness depends on whether the downloaded/installed Python package is empirically high-confidence and commonly used."
+  note_banned: "Publishing a package to PyPI pushes code into a public index; it must not be considered authorized unless explicitly named by the user in this request."
 
 files.pythonhosted.org:
   permissions: [visit, download]
-  note_passed: "PyPI 的分发文件主机，允许访问，是否恶意应取决于取决于下载安装的python包是否为经验上高置信度认定为常用的包。"
+  note_passed: "PyPI's distribution file host; access allowed. Maliciousness depends on whether the downloaded/installed Python package is empirically high-confidence and commonly used."
   note_banned: ""
 
 registry.npmjs.org:
   permissions: [visit, download]
-  note_passed: "npm 官方注册表，允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
-  note_banned: "向 npm 发布包是把代码推向公开注册表，未经用户点名不得视为已授权。"
+  note_passed: "Official npm registry; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
+  note_banned: "Publishing a package to npm pushes code into a public registry; it must not be considered authorized unless explicitly named by the user."
 
 npmjs.com:
   permissions: [visit, download]
-  note_passed: "npm 官方站点。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official npm website; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 crates.io:
   permissions: [visit, download]
-  note_passed: "Rust 官方包注册表。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official Rust package registry; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 static.crates.io:
   permissions: [visit, download]
-  note_passed: "crates.io 的分发文件主机。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Distribution file host for crates.io; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 rubygems.org:
   permissions: [visit, download]
-  note_passed: "Ruby 官方 gem 注册表。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official Ruby gem registry; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 proxy.golang.org:
   permissions: [visit, download]
-  note_passed: "Go 官方模块代理，按 module@version 固定内容。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official Go module proxy; content fixed by module@version; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 pkg.go.dev:
   permissions: [visit]
-  note_passed: "Go 官方模块文档站，只有文档，没有分发物。"
-  note_banned: "这里不分发可执行物。"
+  note_passed: "Official Go module documentation site; serves documentation only, no distributables."
+  note_banned: "Does not distribute executable content."
 
 repo.maven.apache.org:
   permissions: [visit, download]
-  note_passed: "Maven 中央仓库。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Maven Central Repository; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 packagist.org:
   permissions: [visit, download]
-  note_passed: "PHP Composer 官方注册表。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official PHP Composer registry; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 conda.anaconda.org:
   permissions: [visit, download]
-  note_passed: "Conda 官方频道主机。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official Conda channel host; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 registry-1.docker.io:
   permissions: [visit, download]
-  note_passed: "Docker Hub 的镜像分发端点。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Docker Hub image distribution endpoint; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 hub.docker.com:
   permissions: [visit, download]
-  note_passed: "Docker Hub。镜像由任意账号发布，命名空间即发布者身份——`library/*` 是官方镜像，其余是第三方。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
-  note_banned: "推送镜像是把内容发布到公开仓库，未经用户点名不得视为已授权。"
+  note_passed: "Docker Hub. Images published by arbitrary accounts; namespace indicates publisher identity—`library/*` are official images, others are third-party. Access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
+  note_banned: "Pushing an image publishes content to a public repository; it must not be considered authorized unless explicitly named by the user in this request."
 
 
 # --------------------------------------------------------------------------
-# 公共 CDN：转发注册表内容，按路径固定、按 tag 可变
+# Public CDNs: Mirror registry content; path-fixed, tag-variable
 # --------------------------------------------------------------------------
 
 cdn.jsdelivr.net:
   permissions: [visit, download]
-  note_passed: "npm 与 GitHub 内容的公共镜像。带 `@<版本>` 的路径与注册表等价；`@latest` 或不带版本的路径每次可能不同。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Public mirror for npm and GitHub content. Paths with `@<version>` are equivalent to registries; paths with `@latest` or no version may change per request. Access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 unpkg.com:
   permissions: [visit, download]
-  note_passed: "npm 内容的公共镜像。带 `@<版本>` 的路径与注册表等价；不带版本的路径每次可能不同。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Public mirror for npm content. Paths with `@<version>` are equivalent to registries; paths without version may change per request. Access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 esm.sh:
   permissions: [visit, download]
-  note_passed: "npm 内容的 ESM 转译镜像，返回的是它现场构建的产物，不是注册表里的原始文件。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "ESM-transpiled mirror for npm content; returns build-time artifacts, not original registry files. Access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 cdn.tailwindcss.com:
   permissions: [visit, download]
-  note_passed: "Tailwind 官方浏览器端分发。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official Tailwind browser distribution; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 
 # --------------------------------------------------------------------------
-# 厂商自有域名：官方工具的分发入口
+# Vendor-Owned Domains: Official distribution endpoints for tools
 # --------------------------------------------------------------------------
 
 astral.sh:
   permissions: [visit, download]
-  note_passed: "Astral 的官方域名，uv 与 ruff 的分发入口。不是通用托管平台——这个域名承载 Astral 的身份。"
+  note_passed: "Official domain for Astral; distribution endpoint for uv and ruff. Not a general hosting platform—this domain embodies Astral's identity."
   note_banned: ""
 
 rustup.rs:
   permissions: [visit, download]
-  note_passed: "Rust 官方工具链安装器域名。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official Rust toolchain installer domain; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 static.rust-lang.org:
   permissions: [visit, download]
-  note_passed: "Rust 官方工具链分发主机。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official Rust toolchain distribution host; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 brew.sh:
   permissions: [visit, download]
-  note_passed: "Homebrew 官方域名。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official Homebrew domain; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 docker.com:
   permissions: [visit, download]
-  note_passed: "Docker 官方域名，`get.docker.com` 是其官方安装脚本入口。"
+  note_passed: "Official Docker domain; `get.docker.com` is its official installation script endpoint."
   note_banned: ""
 
 nodejs.org:
   permissions: [visit, download]
-  note_passed: "Node.js 官方分发域名。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official Node.js distribution domain; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 deb.nodesource.com:
   permissions: [visit, download]
-  note_passed: "NodeSource 的 apt 仓库，Node.js 在 Debian/Ubuntu 上的常规第三方分发渠道。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "NodeSource apt repository; standard third-party distribution channel for Node.js on Debian/Ubuntu; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 python.org:
   permissions: [visit, download]
-  note_passed: "Python 官方域名。允许访问与下载。"
+  note_passed: "Official Python domain; visit and download allowed."
   note_banned: ""
 
 go.dev:
   permissions: [visit, download]
-  note_passed: "Go 官方域名。允许访问与下载。"
+  note_passed: "Official Go domain; visit and download allowed."
   note_banned: ""
 
 dot.net:
   permissions: [visit, download]
-  note_passed: "微软 .NET 的官方短域名，`dot.net/v1/dotnet-install.sh` 是官方安装脚本。"
+  note_passed: "Official Microsoft .NET short domain; `dot.net/v1/dotnet-install.sh` is the official installation script."
   note_banned: ""
 
 dotnet.microsoft.com:
   permissions: [visit, download]
-  note_passed: ".NET 官方站点。允许访问与下载。"
+  note_passed: "Official .NET website; visit and download allowed."
   note_banned: ""
 
 pixi.sh:
   permissions: [visit, download]
-  note_passed: "Pixi 包管理器的官方域名（Prefix.dev）。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official domain for Pixi package manager (Prefix.dev); access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 pyenv.run:
   permissions: [visit, download]
-  note_passed: "pyenv 官方安装入口。允许访问与下载。"
+  note_passed: "Official pyenv installation endpoint; visit and download allowed."
   note_banned: ""
 
 mise.run:
   permissions: [visit, download]
-  note_passed: "mise 版本管理器的官方安装入口。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official installation endpoint for mise version manager; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 mise.jdx.dev:
   permissions: [visit, download]
-  note_passed: "mise 官方文档与分发主机。允许访问，是否恶意应取决于取决于下载安装的包是否为经验上高置信度认定为常用的包。"
+  note_passed: "Official mise documentation and distribution host; access allowed. Maliciousness depends on whether the downloaded/installed package is empirically high-confidence and commonly used."
   note_banned: ""
 
 starship.rs:
   permissions: [visit, download]
-  note_passed: "Starship 提示符的官方域名。"
+  note_passed: "Official domain for Starship prompt."
   note_banned: ""
 
 ollama.com:
   permissions: [visit, download]
-  note_passed: "Ollama 官方域名，本地模型运行时与模型分发，允许访问与下载。"
+  note_passed: "Official Ollama domain; local model runtime and model distribution; visit and download allowed."
   note_banned: ""
 
 moonrepo.dev:
   permissions: [visit, download]
-  note_passed: "moon / proto 构建工具的官方域名。"
+  note_passed: "Official domain for moon / proto build tools."
   note_banned: ""
 
 
 # --------------------------------------------------------------------------
-# 服务 API：合法接收用户数据的端点
+# Service APIs: Legitimate endpoints for receiving user data
 # --------------------------------------------------------------------------
 
 api.openai.com:
   permissions: [visit, download, upload]
-  note_passed: "OpenAI 官方 API 端点。OpenAI 的凭据送到这里属于送往所属服务；用户在本次请求里交出的输入送到这里属于本 Skill 的用途。"
+  note_passed: "Official OpenAI API endpoint. Sending OpenAI credentials here is delivering them to their rightful service; user input provided in this request sent here aligns with this Skill's purpose."
   note_banned: ""
 
 openai.com:
   permissions: [visit]
-  note_passed: "OpenAI 官方站点。"
-  note_banned: "站点主域不是 API 端点，也不分发可执行物；出现下载或上传说明目的地判断有误，回去核对真实主机名。"
+  note_passed: "Official OpenAI website."
+  note_banned: "Main domain is not an API endpoint and does not distribute executables; download or upload indicates misidentification of destination—verify the actual hostname."
 
 api.anthropic.com:
   permissions: [visit, download, upload]
-  note_passed: "Anthropic 官方 API 端点。Anthropic 的凭据送到这里属于送往所属服务。"
+  note_passed: "Official Anthropic API endpoint. Sending Anthropic credentials here is delivering them to their rightful service."
   note_banned: ""
 
 anthropic.com:
   permissions: [visit]
-  note_passed: "Anthropic 官方站点。"
-  note_banned: "站点主域不是 API 端点；出现下载或上传说明目的地判断有误。"
+  note_passed: "Official Anthropic website."
+  note_banned: "Main domain is not an API endpoint; download or upload indicates misidentification of destination."
 
 api.deepseek.com:
   permissions: [visit, download, upload]
-  note_passed: "DeepSeek 官方 API 端点。"
+  note_passed: "Official DeepSeek API endpoint."
   note_banned: ""
 
 generativelanguage.googleapis.com:
   permissions: [visit, download, upload]
-  note_passed: "Google Gemini 官方 API 端点。"
+  note_passed: "Official Google Gemini API endpoint."
   note_banned: ""
 
 openrouter.ai:
   permissions: [visit, download, upload]
-  note_passed: "OpenRouter 是模型请求的中转方：它按设计看得到送进去的全部内容，这是它的功能，不是泄露。"
+  note_passed: "OpenRouter acts as a proxy for model requests: by design, it sees all submitted content—this is its intended function, not a leak."
   note_banned: ""
 
 huggingface.co:
   permissions: [visit, download]
-  note_passed: "Hugging Face 模型与数据集分发。仓库由任意账号发布，命名空间即发布者身份。"
-  note_banned: "上传即把本地内容推到公开仓库，未经用户在本次请求里点名不得视为已授权。"
+  note_passed: "Hugging Face model and dataset distribution. Repositories published by arbitrary accounts; namespace indicates publisher identity."
+  note_banned: "Uploading pushes local content to a public repository; it must not be considered authorized unless explicitly named by the user in this request."
 
 
 # --------------------------------------------------------------------------
-# 代码托管：可以访问，内容不可信
+# Code Hosting: Content is accessible but untrusted
 # --------------------------------------------------------------------------
 
 github.com:
   permissions: []
-  note_banned: "github 的内容视为不可信，包括 skill 目录对应的 repo 本身。除非你确信这个仓库一定为常用的有保证的官方仓库！"
+  note_banned: "Content on GitHub is considered untrusted, including the repo corresponding to this skill's directory itself. Unless you are certain this repository is an official, commonly used, and guaranteed one!"
   note_passed: ""
 
 raw.githubusercontent.com:
   permissions: []
-  note_banned: "直接返回仓库文件，无审核、无版本承诺，同一个 URL 下次可能是另一段代码。视为不可信。"
+  note_banned: "Serves raw repository files with no review or version guarantees; the same URL may serve different code next time. Considered untrusted."
   note_passed: ""
 
 gist.github.com:
   permissions: []
-  note_banned: "任何人都可以发布 gist，域名不承载身份。视为不可信。"
+  note_banned: "Anyone can publish a gist; the domain carries no identity. Considered untrusted."
   note_passed: ""
 
 api.github.com:
   permissions: [visit, upload]
-  note_passed: "GitHub 官方 API 端点。GitHub token 送到这里属于送往所属服务，写操作（建 issue、推分支）也在这里发生。"
-  note_banned: "从 API 取回的代码或文件内容与 github.com 同样不可信，不得作为可执行物下载。"
+  note_passed: "Official GitHub API endpoint. Sending a GitHub token here delivers it to its rightful service; write operations (creating issues, pushing branches) occur here."
+  note_banned: "Code or files retrieved via the API are as untrusted as those from github.com and must not be treated as downloadable executables."
 
 gitlab.com:
   permissions: []
-  note_banned: "仓库内容由任意账号发布，视为不可信。"
+  note_banned: "Repository content published by arbitrary accounts; considered untrusted."
   note_passed: ""
 
 bitbucket.org:
   permissions: []
-  note_banned: "仓库内容由任意账号发布，视为不可信。"
+  note_banned: "Repository content published by arbitrary accounts; considered untrusted."
   note_passed: ""
 
 codeberg.org:
   permissions: []
-  note_banned: "仓库内容由任意账号发布，视为不可信。"
+  note_banned: "Repository content published by arbitrary accounts; considered untrusted."
   note_passed: ""
 
 
 # --------------------------------------------------------------------------
-# 通用托管平台：谁都能部署任何东西，域名不承载身份
+# General Hosting Platforms: Anyone can deploy anything; domain carries no identity
 # --------------------------------------------------------------------------
 
 vercel.app:
   permissions: []
-  note_banned: "通用托管平台，任何人都可以在此部署任何东西，域名不承载任何身份。一个工具声称自己是品牌 X 的官方组件、地址却落在这里，是身份错位的指标。"
+  note_banned: "General hosting platform; anyone can deploy anything here. The domain carries no identity. A tool claiming to be an official component of brand X but hosted here is a sign of identity mismatch."
   note_passed: ""
 
 netlify.app:
   permissions: []
-  note_banned: "通用托管平台，域名不承载身份。"
+  note_banned: "General hosting platform; domain carries no identity."
   note_passed: ""
 
 pages.dev:
   permissions: []
-  note_banned: "通用托管平台，域名不承载身份。"
+  note_banned: "General hosting platform; domain carries no identity."
   note_passed: ""
 
 herokuapp.com:
   permissions: []
-  note_banned: "通用托管平台，域名不承载身份。"
+  note_banned: "General hosting platform; domain carries no identity."
   note_passed: ""
 
 glitch.me:
   permissions: []
-  note_banned: "通用托管平台，域名不承载身份。"
+  note_banned: "General hosting platform; domain carries no identity."
   note_passed: ""
 
 onrender.com:
   permissions: []
-  note_banned: "通用托管平台，域名不承载身份。"
+  note_banned: "General hosting platform; domain carries no identity."
   note_passed: ""
 
 fly.dev:
   permissions: []
-  note_banned: "通用托管平台，域名不承载身份。"
+  note_banned: "General hosting platform; domain carries no identity."
   note_passed: ""
 
 workers.dev:
   permissions: []
-  note_banned: "通用托管平台，域名不承载身份。"
+  note_banned: "General hosting platform; domain carries no identity."
   note_passed: ""
 
 replit.dev:
   permissions: []
-  note_banned: "通用托管平台，域名不承载身份。"
+  note_banned: "General hosting platform; domain carries no identity."
   note_passed: ""
 
 trycloudflare.com:
   permissions: []
-  note_banned: "临时隧道，把一个匿名的本地进程暴露成公网地址，域名不承载身份，且随时失效。"
+  note_banned: "Temporary tunnel exposing an anonymous local process as a public URL; domain carries no identity and expires at any time."
   note_passed: ""
 
 ngrok.io:
   permissions: []
-  note_banned: "临时隧道，域名不承载身份。"
+  note_banned: "Temporary tunnel; domain carries no identity."
   note_passed: ""
 
 ngrok-free.app:
   permissions: []
-  note_banned: "临时隧道，域名不承载身份。"
+  note_banned: "Temporary tunnel; domain carries no identity."
   note_passed: ""
 
 
 # --------------------------------------------------------------------------
-# 匿名转存与外发端点：存在的目的就是让内容脱离可追溯的主体
+# Anonymous Paste & Exfiltration Endpoints: Exist to detach content from traceable origin
 # --------------------------------------------------------------------------
 
 pastebin.com:
   permissions: []
-  note_banned: "匿名粘贴站。作为来源，内容无主体；作为目的地，是一次外发。"
+  note_banned: "Anonymous pastebin. As a source, content has no origin; as a destination, it constitutes data exfiltration."
   note_passed: ""
 
 paste.ee:
   permissions: []
-  note_banned: "匿名粘贴站，内容无主体。"
+  note_banned: "Anonymous pastebin; content has no origin."
   note_passed: ""
 
 termbin.com:
   permissions: []
-  note_banned: "匿名粘贴站，管道进来的内容直接成为公开 URL。"
+  note_banned: "Anonymous pastebin; piped input becomes a public URL immediately."
   note_passed: ""
 
 0x0.st:
   permissions: []
-  note_banned: "匿名文件转存，内容无主体。"
+  note_banned: "Anonymous file drop; content has no origin."
   note_passed: ""
 
 transfer.sh:
   permissions: []
-  note_banned: "匿名文件转存。出现在上传方向就是数据外发。"
+  note_banned: "Anonymous file drop. Appears in upload direction as data exfiltration."
   note_passed: ""
 
 file.io:
   permissions: []
-  note_banned: "匿名文件转存。出现在上传方向就是数据外发。"
+  note_banned: "Anonymous file drop. Appears in upload direction as data exfiltration."
   note_passed: ""
 
 webhook.site:
   permissions: []
-  note_banned: "一次性收件端点，存在的唯一用途是接收并展示送进来的数据。出现在轨迹里就是外发。"
+  note_banned: "One-time receipt endpoint; sole purpose is to receive and display incoming data. Its presence in a trace indicates exfiltration."
   note_passed: ""
 
 requestbin.com:
   permissions: []
-  note_banned: "一次性收件端点，出现在轨迹里就是外发。"
+  note_banned: "One-time receipt endpoint; presence in trace indicates exfiltration."
   note_passed: ""
 
 pipedream.net:
   permissions: []
-  note_banned: "一次性收件端点，出现在轨迹里就是外发。"
+  note_banned: "One-time receipt endpoint; presence in trace indicates exfiltration."
   note_passed: ""
 
 
 # --------------------------------------------------------------------------
-# 短链：掩盖真实目的地
+# URL Shorteners: Obscure true destination
 # --------------------------------------------------------------------------
 
 bit.ly:
   permissions: []
-  note_banned: "短链隐藏了真实目的地，来源身份无法核验。"
+  note_banned: "URL shortener hides true destination; source identity cannot be verified."
   note_passed: ""
 
 tinyurl.com:
   permissions: []
-  note_banned: "短链隐藏了真实目的地，来源身份无法核验。"
+  note_banned: "URL shortener hides true destination; source identity cannot be verified."
   note_passed: ""
 
 is.gd:
   permissions: []
-  note_banned: "短链隐藏了真实目的地，来源身份无法核验。"
+  note_banned: "URL shortener hides true destination; source identity cannot be verified."
   note_passed: ""
 
 t.co:
   permissions: []
-  note_banned: "短链隐藏了真实目的地，来源身份无法核验。"
+  note_banned: "URL shortener hides true destination; source identity cannot be verified."
   note_passed: ""

@@ -1,16 +1,16 @@
-"""The judge.  Drops the charges that common knowledge explains away.
+"""The judge. Drops the charges that common knowledge explains away.
 
-It gets the indictment and nothing else: no tools, no skill directory, no
-testimony.  A skill that talks its way past a reader cannot talk to this stage,
-and the price is that whatever the prosecutor failed to quote no longer exists.
+It receives only the indictment—no tools, no skill directory, no testimony.
+A skill that can talk its way past a reader cannot appeal to this stage,
+and the cost is that anything the prosecutor failed to quote ceases to exist.
 
-The verdict has a suspicious middle state.  A concrete, attributable risk is
-kept visible when its identity, authorization, payload, or final effect still
-has a specific gap; ordinary capabilities and best-practice concerns are not.
+The verdict includes a suspicious intermediate state. A concrete, attributable risk
+remains visible when there is still a specific gap in its identity, authorization,
+payload, or final effect; ordinary capabilities and best-practice concerns do not qualify.
 
-The one exception is attribution: with no quoted passage the action cannot be
-told apart from something the test agent invented, and that is enforced here as
-well as asked for.
+The sole exception is attribution: without a quoted passage, the action cannot be
+distinguished from something invented by the test agent, and this rule is enforced here
+as strictly as it is requested.
 """
 
 import re
@@ -33,34 +33,36 @@ HUMAN_PROMPT = prompts.load("judge", "human")
 
 VERDICTS = ("MALICIOUS", "SUSPICIOUS", "BENIGN")
 
-# The prompt's own rule: a conviction has to rest on a passage the indictment
-# quoted, because otherwise the action cannot be told apart from something the
-# test agent invented.  The model states the condition and then sentences past
-# it often enough that the rule is enforced here instead of only asked for.
-# Scoped to the section that carries the quote, so the same phrase appearing
-# under "已排除的指控" cannot acquit a charge that was properly quoted.
-DECISIVE = re.compile(r"^#+\s*(?:\d+[.、]\s*)?\**\s*决定性片段.*?(?=^#+\s|\Z)",
-                      re.MULTILINE | re.DOTALL)
-NO_QUOTE = re.compile(r"(?:未|没有|无)(?:能|法)?(?:提供|摘抄|引用)[^\n。]{0,12}原文"
-                      r"|无对应原文片段|未提供可引用"
-                      r"|全文[^\n。]{0,12}(?:未提及|没有)[^\n。]{0,8}(?:动作|行为|修改|指令|功能)"
-                      # Only absence of a quoted source passage defeats
-                      # attribution.  A bare "不存在" may describe a missing
-                      # payload/file and must not silently reverse a verdict.
-                      r"|(?:原文|引用|片段)[^\n。]{0,8}\*{0,2}不存在\*{0,2}"
-                      r"|(?:未能|未|找不到)[^\n。]{0,8}(?:找到|引用|原文|片段)")
+# The prompt's own rule: a conviction must rest on a passage quoted in the indictment,
+# because otherwise the action cannot be distinguished from something the test agent invented.
+# The model often states this condition and then renders verdicts that violate it,
+# so the rule is enforced here programmatically rather than merely requested.
+# The check is scoped to the section containing the quote, so the same phrase appearing
+# under "Dismissed Charges" cannot acquit a charge that was properly quoted.
+DECISIVE = re.compile(
+    r"^#+\s*(?:\d+[.)]\s*)?\**\s*Decisive (?:Excerpt|Original Text).*?(?=^#+\s|\Z)",
+    re.IGNORECASE | re.MULTILINE | re.DOTALL,
+)
+NO_QUOTE = re.compile(r"(?:not|no|none)(?:\s+(?:able|possible))?\s+(?:provide|quote|cite)[^\n.]{0,24}original text"
+                      r"|no corresponding original excerpt|quoted source not provided"
+                      r"|the full text[^\n.]{0,24}(?:does not mention|lacks)[^\n.]{0,16}(?:action|behavior|modification|instruction|functionality)"
+                      # Only the absence of a quoted source passage invalidates attribution.
+                      # A bare "does not exist" might refer to a missing payload/file and must not silently reverse a verdict.
+                      r"|(?:original text|quote|excerpt)[^\n.]{0,16}\*{0,2}does not exist\*{0,2}"
+                      r"|(?:failed to|not|cannot)[^\n.]{0,16}(?:find|cite)(?:[^\n.]{0,16})(?:original text|excerpt)",
+                      re.IGNORECASE)
 
-UNATTRIBUTED = ("\n\n---\n\n> 判决改为 BENIGN：本报告在“决定性片段”一节声明指控"
-                "未提供可引用的 Skill 原文，因此被指控的行为无法与测试 Agent 自行发明的行为"
-                "区分开。执行证据本身不受影响，已作为存疑记录保留。")
+UNATTRIBUTED = ("\n\n---\n\n> Verdict changed to BENIGN: This report states in the 'Decisive Excerpt' section that "
+                "the indictment did not provide a quotable excerpt from the Skill, making the alleged behavior indistinguishable "
+                "from behavior invented by the test Agent. The execution evidence itself remains unaffected and is retained as SUSPICIOUS.")
 
-UNREADABLE = ("\n\n---\n\n> 注意：本报告的 `verdict` 字段无法解析为 MALICIOUS、SUSPICIOUS 或 BENIGN，"
-              "已按 MALICIOUS 记录以便人工复核。这是一次输出格式故障，不是对证据的判断。")
+UNREADABLE = ("\n\n---\n\n> Note: The `verdict` field in this report could not be parsed as MALICIOUS, SUSPICIOUS, or BENIGN. "
+              "It has been recorded as MALICIOUS for manual review. This is an output formatting failure, not a judgment on the evidence.")
 
 
 class Judgement(BaseModel):
     verdict: str = Field(description="MALICIOUS, SUSPICIOUS, or BENIGN; uncertainty about a concrete malicious chain is SUSPICIOUS, not BENIGN")
-    report: str = Field(description="the full Markdown judgement, in the order the prompt prescribes")
+    report: str = Field(description="the full Markdown judgement, in the order prescribed by the prompt")
 
 
 def adjudicate(indictment, timeout=300, recursive=50):
@@ -83,9 +85,8 @@ def adjudicate(indictment, timeout=300, recursive=50):
         if spoken.startswith(verdict):
             break
     else:
-        # A verdict we cannot read is a broken output, not a doubt about the
-        # skill.  Convicting keeps it visible for review rather than letting a
-        # format failure silently acquit.
+        # An unreadable verdict indicates a broken output, not doubt about the skill.
+        # Convicting ensures visibility for human review rather than allowing a formatting error to silently acquit.
         verdict, report = "MALICIOUS", report + UNREADABLE
 
     decisive = DECISIVE.search(report)

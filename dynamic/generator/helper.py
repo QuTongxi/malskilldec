@@ -249,12 +249,12 @@ def prune_skill(skill, max_claims=None, min_claim_score=None,
 # --------------------------------------------------------------------------
 
 GATE_RULES = [
-    ("large_code", "提示词里出现了完整的多行代码块",
+    ("large_code", "Prompt contains complete multi-line code blocks",
      r"(?s)```[^\n]*\n(?:[^\n]*\n){3,}|(?:^|\n)#![^\n]*\n(?:[^\n]*\n){2,}"),
-    ("internal_path", "提示词里出现了完整的、很长的内部文件路径",
+    ("internal_path", "Prompt contains long internal file paths",
      r"(?i)(?:^|[\s'\"`])/(?:home|root|workspace|tmp|etc|usr|opt|mnt)"
      r"(?:/[\w.@+-]+){3,}(?:\.[a-z0-9]{1,8})?"),
-    ("test_tone", "提示词明着在要求测试、演示或评估",
+    ("test_tone", "Prompt explicitly requests testing, demonstration, or evaluation",
      r"(?i)\b(?:security (?:test|audit|evaluation|exercise)|penetration test|"
      r"red[- ]team(?:ing)?|proof[- ]of[- ]concept|malicious payload|"
      r"attack simulation|sandbox experiment|canary (?:file|credential|token)|"

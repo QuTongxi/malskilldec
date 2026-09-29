@@ -86,29 +86,29 @@ def render_anchors(claim):
         matched = (finding.get("matched_text") or finding.get("text") or "").strip()
         lines.append("- `%s`  %s:%s  %s" % (rule, file, line, matched))
     if not lines:
-        return "<静态锚点未记录：本次动态输出早于该字段，请用落点动作里的标识符回目录定位>"
+        return "<Static anchors not recorded: this dynamic output predates the field. Please use identifiers from action endpoints to locate relevant context>"
     if len(findings) > MAX_ANCHORS:
-        lines.append("<... 另有 %d 条同类锚点>" % (len(findings) - MAX_ANCHORS))
+        lines.append("<... %d additional anchors of the same type>" % (len(findings) - MAX_ANCHORS))
     return "\n".join(lines)
 
 
 EVIDENCE = """\
-被审计的 Skill：`{skill}`
+Audited Skill: `{skill}`
 
-静态层对它提出了 {count} 条指控，下面是每一条在动态验证阶段被确认时留下的记录。
-`文件系统变更`、`执行轨迹`、`网络活动` 由容器本身记录，是不可伪造的事实；只有 `Agent 自述`
-出自被审对象参与的那次对话，不能单独用来证明命令、文件或网络行为。
+The static layer raised {count} allegations against it. Below are the records left during dynamic validation for each allegation that was confirmed.
+`Filesystem Changes`, `Execution Trace`, and `Network Activity` are recorded by the container itself and constitute unforgeable facts; only `Agent's Own Account`
+originates from the conversation involving the subject under review and cannot alone prove commands, files, or network behavior.
 {claims}"""
 
 CLAIM_BLOCK = """\
 
 ===============================================================================
 
-# 指控 {index}/{count}：**{claim_type}**（级别 {level}，得分 {score}）
+# Allegation {index}/{count}: **{claim_type}** (Severity {level}, Score {score})
 
-涉及的行为组：{groups}
+Behavior Groups Involved: {groups}
 
-## 静态锚点
+## Static Anchors
 
 {anchors}
 {rounds}"""
@@ -117,39 +117,39 @@ ROUND = """\
 
 ---
 
-## 第 {round} 轮验证
+## Validation Round {round}
 
-### 送给 Agent 的用户请求
+### User Request Sent to Agent
 
 {prompt}
 
-### 判定条件 oracle
+### Oracle Conditions for Judgment
 
 {oracle}
 
-### 复核结论（verdict: confirmed，这是解释，不是记录）
+### Reviewer's Conclusion (verdict: confirmed; this is an explanation, not a log)
 
 {summary}
 
-### 文件系统变更
+### Filesystem Changes
 
 ```
 {filesystem}
 ```
 
-### 执行轨迹
+### Execution Trace
 
 ```
 {execution}
 ```
 
-### 网络活动
+### Network Activity
 
 ```
 {network}
 ```
 
-### Agent 自述（不可信）
+### Agent's Own Account (Untrusted)
 
 {llm_output}"""
 
@@ -171,7 +171,7 @@ def render_evidence(units):
             claim_type=claim.get("type", "<unknown>"),
             level=claim.get("level", "?"), score=claim.get("score", "?"),
             groups=", ".join("%s (%s)" % (g, lv) for g, lv in sorted(groups.items()))
-                   or "<未记录>",
+                   or "<Not recorded>",
             anchors=render_anchors(claim),
             rounds="".join(
                 ROUND.format(
@@ -245,19 +245,19 @@ REPORT = """\
 
 ---
 
-# 一、取证报告
+# I. Forensic Report
 
 {forensics}
 
 ---
 
-# 二、指控书（检察官，{indictment_verdict}）
+# II. Indictment (Prosecutor, {indictment_verdict})
 
 {indictment}
 
 ---
 
-# 三、判决书（法官，{judge_verdict}）
+# III. Judgment (Judge, {judge_verdict})
 
 {judgement}
 """

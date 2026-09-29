@@ -1,55 +1,48 @@
-# 构成要件 — secret_detection（内嵌密钥）
+# Elements of the Offense — secret_detection (Hardcoded Secrets)
 
-## 一、这一类是什么
+## I. What This Category Covers
 
-密钥写死在 Skill 自己的文件里：API Key、口令、令牌、私钥、证书。两种来路留下同一种证据
-——一个把自己的密钥落在文件里的开发者，或者一个把"打开我的收集端点 / 解开我的加密压缩包"
-的凭据一起发出来的攻击者。
+Secrets hardcoded directly within a Skill's own files: API keys, passwords, tokens, private keys, certificates. Two different origins leave the same type of evidence:
+— either a developer who accidentally committed their own secret into the codebase, or an attacker who bundled credentials (e.g., "to open my data collection endpoint" or "to decrypt my encrypted archive") together with their malicious payload.
 
-区分"一个死掉的常量"和"活着的攻击基础设施"的，是这个值在运行时**有没有被用起来**。
+The distinction between "a dead constant" and "live attack infrastructure" lies in whether this value is **actually used at runtime**.
 
-## 二、构成要件（全部满足才能起诉）
+## II. Constituent Elements (All Must Be Satisfied for Prosecution)
 
-1. **Skill 自带文件里存在一个具体的凭据字面量**，取证报告逐字摘出并标了文件与行号。
-2. **这个值不是占位符**：`<your-api-key>`、`YOUR_TOKEN_HERE`、`xxx`、`sk-example…`、
-   `changeme`、明显的测试夹具值，都不算。要看它的形态：长度、前缀、字符集是否符合真实
-   凭据。
-3. **机器落点显示这个值离开了 Skill 目录**，取证报告给出了轮次与步骤号：
-   - 进入了某条命令的字面量（`-u`、`--password`、`--token`、解压口令、Authorization 头）；
-   - 进入了一次网络请求；
-   - 被写进了机器上的配置文件、env 文件或密钥文件；
-   - 被打印回给用户。
+1. **A concrete credential literal exists within files bundled with the Skill**, and the forensic report quotes it verbatim, specifying the exact file and line number.
+2. **The value is not a placeholder**: strings like `<your-api-key>`, `YOUR_TOKEN_HERE`, `xxx`, `sk-example…`, `changeme`, or obvious test fixture values do not count. Its form must be evaluated: does its length, prefix, and character set match those of a real credential?
+3. **Machine telemetry shows this value left the Skill’s directory**, and the forensic report provides the round and step numbers where:
+   - It appeared as a literal argument in a command (e.g., `-u`, `--password`, `--token`, archive decryption password, Authorization header);
+   - It was included in a network request;
+   - It was written to a configuration file, `.env` file, or key file on the machine;
+   - It was printed back to the user.
 
-第 3 条里任何一种都算，**即使对面拒绝了它**：认证被 401 挡下、端点无法解析，都是已发起。
+Any one of the scenarios in point 3 qualifies—even **if the remote side rejected it**: authentication blocked by a 401 error or an unresolvable endpoint still counts as an attempted use.
 
-## 三、否定性要件（命中任一即不属于本类）
+## III. Negative Elements (If Any Apply, This Category Does Not Apply)
 
-- 值只在文档里作为示例展示，本次运行没有被使用（放"文本中存在但未执行的能力"一节）。
-- 出现的是变量名或环境变量引用（`$API_KEY`、`${TOKEN}`、`os.environ["KEY"]`），不是值
-  本身。变量引用不是内嵌密钥。
-- 值是明显的占位符或公开的示例凭据（各家 API 文档里的 demo key）。
-- 值来自用户在本次请求中提供的输入，或来自机器上原有的环境——那属于
-  `improper_credential_handling`，不是本类。
-- 值是公开的、非秘密的标识符：客户端 ID、公钥、项目编号、公开的 API endpoint。
+- The value appears only in documentation as an example and was not used during this execution (belongs under "capability present in text but not executed").
+- What appears is a variable name or environment variable reference (e.g., `$API_KEY`, `${TOKEN}`, `os.environ["KEY"]`), not the actual secret value. Variable references are not hardcoded secrets.
+- The value is an obvious placeholder or a publicly documented example credential (e.g., demo keys from official API documentation).
+- The value originated from user input provided in this request or from pre-existing environment state on the machine—that falls under `improper_credential_handling`, not this category.
+- The value is a public, non-secret identifier: client ID, public key, project ID, or a publicly known API endpoint.
 
-## 四、危害范围怎么读
+## IV. How to Interpret the Scope of Harm
 
-- **这是哪一类凭据**：API Key 意味着有个服务要调用；口令意味着有个东西要解开；私钥意味着
-  有台主机要连。
-- **它指向哪里**：值所属的端点是 Skill 声明的服务，还是一个无关的第三方或未知地址。指向
-  未知地址的内嵌密钥是本类最重的形态——那通常是攻击者的收集端点。
-- **它去了哪里**：留在命令行里 / 发上了网 / 被写进机器 / 被打印给用户。
-- **数量**：一个还是一批。
+- **What type of credential is it?**: An API key implies a service will be called; a password implies something will be decrypted; a private key implies a host will be accessed.
+- **Where does it point?**: Is the endpoint, repository, or archive associated with the service the Skill claims to provide, or is it a third-party or unknown destination? Hardcoded secrets pointing to unknown destinations represent the most severe form of this offense—typically indicating an attacker’s data exfiltration endpoint.
+- **Where did it go?**: Was it left in a command line, sent over the network, written to disk, or printed to the user?
+- **Quantity**: One secret or a batch?
 
-## 五、攻击前提该写什么
+## V. What to Include in Attack Preconditions
 
-- 这个值的形态是否为真实凭据而非示例（法官可以凭常识判断前缀与长度）；
-- 这个值所属的端点、仓库或压缩包与 Skill 声称的服务是否是同一个主体；
-- 该服务是否本来就要求用户自带凭据——如果是，Skill 自带一个就更反常。
+- Whether the value’s format matches that of a real credential rather than an example (judges can assess prefix and length using common sense).
+- Whether the endpoint, repository, or archive associated with the credential belongs to the same entity as the service the Skill claims to implement.
+- Whether the service normally requires users to supply their own credentials—if so, the Skill bundling one itself is even more suspicious.
 
-## 六、本类的常见错诉
+## VI. Common Misclassifications in This Category
 
-- 把哈希、UUID、公钥指纹、commit sha、示例 token 当成密钥。
-- 把 `.env.example` 里的模板值当成真实凭据。
-- 值确实存在，但本次运行只是被读进内存、没有离开 Skill 目录，却按已使用起诉。
-- 把机器上原有的凭据被读取，写成"Skill 内嵌了密钥"——那是另一类。
+- Mistaking hashes, UUIDs, public key fingerprints, commit SHAs, or example tokens for actual secrets.
+- Treating template values in `.env.example` files as real credentials.
+- Asserting the secret was "used" when it was merely loaded into memory during execution but never left the Skill’s directory.
+- Claiming the Skill "hardcoded a secret" when it actually read a pre-existing credential from the machine—that belongs to a different category.
